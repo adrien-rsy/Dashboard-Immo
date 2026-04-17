@@ -24,33 +24,6 @@ const INITIAL_LOTS = [
 ];
 
 const INITIAL_COSTS = [
-  { id: 1, label: "Prix d'acquisition vendeur", category: "Achat", isGlobal: true, values: { pessimistic: 32000<dyad-write path="src/pages/Index.tsx" description="Complétion de la logique de gestion des lots et des scénarios">
-"use client";
-
-import React, { useState, useMemo, useEffect } from 'react';
-import Sidebar from '@/components/Sidebar';
-import TopBar from '@/components/TopBar';
-import ProjectKPIs from '@/components/ProjectKPIs';
-import LotsTable from '@/components/LotsTable';
-import SalesScenarios from '@/components/SalesScenarios';
-import CostBreakdown from '@/components/CostBreakdown';
-import { MapPin, Calendar, Share2, Download } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
-
-const INITIAL_SCENARIOS = [
-  { id: 'pessimistic', name: 'Pessimiste', icon: 'TrendingDown', isDefault: false, duration: 18 },
-  { id: 'realistic', name: 'Réaliste', icon: 'Zap', isDefault: true, duration: 14 },
-  { id: 'optimistic', name: 'Optimiste', icon: 'TrendingUp', isDefault: false, duration: 12 },
-];
-
-const INITIAL_LOTS = [
-  { id: 1, name: 'Lot 01', type: 'Appartement', level: '1er étage', surface: '42', status: 'Disponible', notes: 'T2 avec balcon', prices: { pessimistic: 155000, realistic: 168000, optimistic: 175000 } },
-  { id: 2, name: 'Lot 02', type: 'Appartement', level: '2e étage', surface: '38', status: 'Optionné', notes: 'T2 traversant', prices: { pessimistic: 145000, realistic: 154000, optimistic: 162000 } },
-  { id: 3, name: 'Lot 03', type: 'Combles', level: '3e étage', surface: '30', status: 'Disponible', notes: 'À aménager', prices: { pessimistic: 85000, realistic: 96000, optimistic: 105000 } },
-  { id: 4, name: 'Lot 04', type: 'Local Pro', level: 'RDC', surface: '28', status: 'Vendu', notes: 'Vitrine rue', prices: { pessimistic: 105000, realistic: 115000, optimistic: 125000 } },
-];
-
-const INITIAL_COSTS = [
   { id: 1, label: "Prix d'acquisition vendeur", category: "Achat", isGlobal: true, values: { pessimistic: 320000, realistic: 320000, optimistic: 320000 } },
   { id: 2, label: "Frais de notaire (estimés)", category: "Achat", isGlobal: true, values: { pessimistic: 25600, realistic: 25600, optimistic: 25600 } },
   { id: 3, label: "Frais d'agence", category: "Achat", isGlobal: true, values: { pessimistic: 18000, realistic: 18000, optimistic: 18000 } },
@@ -63,24 +36,24 @@ const INITIAL_COSTS = [
 
 const Index = () => {
   const [scenarios, setScenarios] = useState(() => {
-    const saved = localStorage.getItem('immo_scenarios_v4');
+    const saved = localStorage.getItem('immo_scenarios_v5');
     return saved ? JSON.parse(saved) : INITIAL_SCENARIOS;
   });
 
   const [lots, setLots] = useState(() => {
-    const saved = localStorage.getItem('immo_lots_v4');
+    const saved = localStorage.getItem('immo_lots_v5');
     return saved ? JSON.parse(saved) : INITIAL_LOTS;
   });
 
   const [costs, setCosts] = useState(() => {
-    const saved = localStorage.getItem('immo_costs_v4');
+    const saved = localStorage.getItem('immo_costs_v5');
     return saved ? JSON.parse(saved) : INITIAL_COSTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('immo_scenarios_v4', JSON.stringify(scenarios));
-    localStorage.setItem('immo_lots_v4', JSON.stringify(lots));
-    localStorage.setItem('immo_costs_v4', JSON.stringify(costs));
+    localStorage.setItem('immo_scenarios_v5', JSON.stringify(scenarios));
+    localStorage.setItem('immo_lots_v5', JSON.stringify(lots));
+    localStorage.setItem('immo_costs_v5', JSON.stringify(costs));
   }, [scenarios, lots, costs]);
 
   const defaultScenario = useMemo(() => scenarios.find(s => s.isDefault) || scenarios[0], [scenarios]);
@@ -107,7 +80,14 @@ const Index = () => {
   };
 
   const handleUpdateLot = (id: number, updatedLotData: any) => {
-    setLots(lots.map(lot => lot.id === id ? { ...lot, ...updatedLotData } : lot));
+    setLots(lots.map(lot => {
+      if (lot.id === id) {
+        // Update the price for the current default scenario
+        const updatedPrices = { ...lot.prices, [defaultScenario.id]: Number(updatedLotData.price) };
+        return { ...lot, ...updatedLotData, prices: updatedPrices };
+      }
+      return lot;
+    }));
     showSuccess("Lot mis à jour");
   };
 
