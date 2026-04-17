@@ -2,31 +2,24 @@
 
 import React from 'react';
 import { 
+  Building2, 
   LayoutDashboard, 
-  Wallet, 
-  PieChart, 
-  Target, 
-  History, 
+  Layers, 
+  Euro, 
+  FileText, 
   Settings, 
-  HelpCircle, 
   LogOut,
-  TrendingUp
+  Users
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: History, label: 'Transactions', active: false },
-  { icon: Wallet, label: 'Accounts', active: false },
-  { icon: PieChart, label: 'Budgeting', active: false },
-  { icon: Target, label: 'Goals', active: false },
-  { icon: TrendingUp, label: 'Reports', active: false },
-];
-
-const footerItems = [
-  { icon: Settings, label: 'Settings' },
-  { icon: HelpCircle, label: 'Help Center' },
-  { icon: LogOut, label: 'Log out' },
+  { icon: LayoutDashboard, label: 'Tableau de bord', active: true },
+  { icon: Building2, label: 'Opérations', active: false },
+  { icon: Layers, label: 'Gestion des lots', active: false },
+  { icon: Euro, label: 'Finances & Bilan', active: false },
+  { icon: FileText, label: 'Documents', active: false },
+  { icon: Users, label: 'Partenaires', active: false },
 ];
 
 interface SidebarProps {
@@ -36,11 +29,14 @@ interface SidebarProps {
 const Sidebar = ({ className }: SidebarProps) => {
   return (
     <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
-      <div className="flex items-center gap-2 mb-10 px-2">
-        <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-          <Wallet className="text-white w-5 h-5" />
+      <div className="flex items-center gap-3 mb-10 px-2">
+        <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10">
+          <Building2 className="text-white w-6 h-6" />
         </div>
-        <span className="font-bold text-xl tracking-tight">FinFlow</span>
+        <div className="flex flex-col">
+          <span className="font-bold text-lg leading-none tracking-tight">ImmoFlow</span>
+          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-1">Marchand de Biens</span>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -48,9 +44,9 @@ const Sidebar = ({ className }: SidebarProps) => {
           <button
             key={item.label}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
               item.active 
-                ? "bg-gray-50 text-black font-medium" 
+                ? "bg-gray-50 text-black font-semibold" 
                 : "text-gray-500 hover:bg-gray-50 hover:text-black"
             )}
           >
@@ -58,31 +54,20 @@ const Sidebar = ({ className }: SidebarProps) => {
               "w-5 h-5 transition-colors",
               item.active ? "text-black" : "text-gray-400 group-hover:text-black"
             )} />
-            <span>{item.label}</span>
+            <span className="text-sm">{item.label}</span>
           </button>
         ))}
       </nav>
 
       <div className="mt-auto pt-6 border-t border-gray-100 space-y-1">
-        <div className="bg-black rounded-2xl p-4 mb-6 text-white relative overflow-hidden group hidden sm:block">
-          <div className="relative z-10">
-            <h4 className="font-semibold mb-1">Upgrade to Pro</h4>
-            <p className="text-xs text-gray-400 mb-3">Get advanced analytics.</p>
-            <button className="w-full py-2 bg-white text-black text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors">
-              Upgrade
-            </button>
-          </div>
-        </div>
-
-        {footerItems.map((item) => (
-          <button
-            key={item.label}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-black transition-all duration-200"
-          >
-            <item.icon className="w-5 h-5 text-gray-400" />
-            <span>{item.label}</span>
-          </button>
-        ))}
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-black transition-all duration-200">
+          <Settings className="w-5 h-5 text-gray-400" />
+          <span className="text-sm">Paramètres</span>
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200">
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm font-medium">Déconnexion</span>
+        </button>
       </div>
     </div>
   );
