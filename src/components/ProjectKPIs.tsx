@@ -36,20 +36,20 @@ const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIP
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const ProjectKPIs = ({ totals }: { totals: any }) => {
+const ProjectKPIs = ({ totals, duration }: { totals: any, duration: number }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <KPICard 
         variant="dark"
         label="Marge Estimée" 
         value={formatEuro(totals.margin)} 
-        subValue={`+${totals.profitability.toFixed(1)}% du CA`}
+        subValue={`+${totals.profitability.toFixed(1)}% sur coût`}
         icon={TrendingUp}
       />
       <KPICard 
         label="Coût Total" 
         value={formatEuro(totals.costTotal)} 
-        subValue="Budget maîtrisé"
+        subValue="Budget opération"
         icon={Wallet}
       />
       <KPICard 
@@ -60,20 +60,20 @@ const ProjectKPIs = ({ totals }: { totals: any }) => {
       />
       <KPICard 
         label="Durée Portage" 
-        value="14 mois" 
-        subValue="Fin estimée : Nov 2025"
+        value={`${duration} mois`} 
+        subValue="Estimation portage"
         icon={Clock}
       />
       <KPICard 
         label="CA Estimé" 
         value={formatEuro(totals.caTotal)} 
-        subValue="Lots identifiés"
+        subValue="Total revente"
         icon={BarChart3}
       />
       <KPICard 
         label="Rentabilité" 
         value={`${totals.profitability.toFixed(1)} %`} 
-        subValue="Objectif : > 15%"
+        subValue="Marge / Coût total"
         icon={TrendingUp}
       />
     </div>

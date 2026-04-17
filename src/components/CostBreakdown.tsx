@@ -5,13 +5,15 @@ import { PieChart, ArrowRight } from 'lucide-react';
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const CostBreakdown = ({ costs, total }: { costs: any[], total: number }) => {
+const CostBreakdown = ({ costs, scenarioId }: { costs: any[], scenarioId: string }) => {
+  const total = costs.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
+
   return (
     <div className="bg-white p-8 rounded-[2.5rem] shadow-sm h-full">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h3 className="text-xl font-bold">Structure des coûts</h3>
-          <p className="text-sm text-gray-500 mt-1">Détail des dépenses engagées</p>
+          <p className="text-sm text-gray-500 mt-1">Détail pour le scénario actif</p>
         </div>
         <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
           <PieChart className="w-6 h-6 text-gray-400" />
@@ -25,7 +27,7 @@ const CostBreakdown = ({ costs, total }: { costs: any[], total: number }) => {
               <div className="w-1.5 h-1.5 rounded-full bg-gray-200 group-hover:bg-black transition-colors" />
               <span className="text-sm text-gray-600 group-hover:text-black transition-colors">{cost.label}</span>
             </div>
-            <span className="text-sm font-bold text-gray-900">{formatEuro(cost.value)}</span>
+            <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenarioId] || 0)}</span>
           </div>
         ))}
       </div>

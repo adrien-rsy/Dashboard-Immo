@@ -23,7 +23,7 @@ import {
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) => void, onDelete: (id: number) => void }) => {
+const LotsTable = ({ lots, scenarios, onAdd, onDelete }: { lots: any[], scenarios: any[], onAdd: (lot: any) => void, onDelete: (id: number) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newLot, setNewLot] = useState({
     name: '',
@@ -37,11 +37,7 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({
-      ...newLot,
-      price: Number(newLot.price),
-      surface: `${newLot.surface} m²`
-    });
+    onAdd(newLot);
     setIsOpen(false);
     setNewLot({ name: '', type: 'Appartement', level: '', surface: '', status: 'Disponible', price: '', notes: '' });
   };
@@ -51,7 +47,7 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
       <div className="p-8 flex items-center justify-between border-b border-gray-50">
         <div>
           <h3 className="text-xl font-bold">Détail des lots</h3>
-          <p className="text-sm text-gray-500 mt-1">Inventaire des unités de l'opération</p>
+          <p className="text-sm text-gray-500 mt-1">Prix estimés par scénario</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -82,7 +78,7 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
                   <Input id="surface" type="number" placeholder="45" value={newLot.surface} onChange={e => setNewLot({...newLot, surface: e.target.value})} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">Prix estimé (€)</Label>
+                  <Label htmlFor="price">Prix de base (€)</Label>
                   <Input id="price" type="number" placeholder="150000" value={newLot.price} onChange={e => setNewLot({...newLot, price: e.target.value})} required />
                 </div>
               </div>
@@ -103,10 +99,10 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
           <thead>
             <tr className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">
               <th className="px-8 py-5">Lot</th>
-              <th className="px-8 py-5">Type & Niveau</th>
               <th className="px-8 py-5">Surface</th>
-              <th className="px-8 py-5">Statut</th>
-              <th className="px-8 py-5">Prix Estimé</th>
+              {scenarios.map(s => (
+                <th key={s.id} className="px-8 py-5 text-center">{s.name}</th>
+              ))}
               <th className="px-8 py-5 text-right">Actions</th>
             </tr>
           </thead>
@@ -120,14 +116,8 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
                     </div>
                     <div>
                       <p className="text-sm font-bold">{lot.name}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">{lot.notes}</p>
+                      <p className="text-[10px] text-gray-400 font-medium">{lot.type} - {lot.level}</p>
                     </div>
-                  </div>
-                </td>
-                <td className="px-8 py-5">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-700">{lot.type}</span>
-                    <span className="text-xs text-gray-400">{lot.level}</span>
                   </div>
                 </td>
                 <td className="px-8 py-5">
@@ -136,18 +126,16 @@ const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) =
                     {lot.surface}
                   </div>
                 </td>
-                <td className="px-8 py-5">
-                  <Badge variant="outline" className={cn(
-                    "rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none",
-                    lot.status === 'Disponible' ? "bg-green-50 text-green-600" : 
-                    lot.status === 'Optionné' ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-500"
-                  )}>
-                    {lot.status}
-                  </Badge>
-                </td>
-                <td className="px-8 py-5">
-                  <span className="text-sm font-bold text-gray-900">{formatEuro(lot.price)}</span>
-                </td>
+                {scenarios.map(s => (
+                  <td key={s.id} className="px-8 py-5 text-center">
+                    <span className={cn(
+                      "text-sm font-bold",
+                      s.isDefault ? "text-black" : "text-gray-400"
+                    )}>
+                      {formatEuro(lot.prices[s.id] || 0)}
+                    </span>
+                  </td>
+                ))}
                 <td className="px-8 py-5 text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
