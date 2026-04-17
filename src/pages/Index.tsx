@@ -24,43 +24,45 @@ const INITIAL_LOTS = [
 ];
 
 const INITIAL_COSTS = [
-  { id: 1, label: "Prix d'acquisition vendeur", category: "Achat", values: { pessimistic: 320000, realistic: 320000, optimistic: 320000 } },
-  { id: 2, label: "Frais de notaire (estimés)", category: "Achat", values: { pessimistic: 25600, realistic: 25600, optimistic: 25600 } },
-  { id: 3, label: "Frais d'agence", category: "Achat", values: { pessimistic: 18000, realistic: 18000, optimistic: 18000 } },
-  { id: 4, label: "Travaux de rénovation", category: "Travaux", values: { pessimistic: 160000, realistic: 140000, optimistic: 130000 } },
-  { id: 5, label: "Frais administratifs & divers", category: "Gestion", values: { pessimistic: 15000, realistic: 12000, optimistic: 10000 } },
-  { id: 6, label: "Honoraires (Architecte, Géomètre)", category: "Gestion", values: { pessimistic: 8500, realistic: 8500, optimistic: 8500 } },
-  { id: 7, label: "Frais financiers (Intérêts)", category: "Finance", values: { pessimistic: 20000, realistic: 15000, optimistic: 12000 } },
-  { id: 8, label: "Imprévus (5%)", category: "Sécurité", values: { pessimistic: 10000, realistic: 7500, optimistic: 5000 } },
+  { id: 1, label: "Prix d'acquisition vendeur", category: "Achat", isGlobal: true, values: { pessimistic: 320000, realistic: 320000, optimistic: 320000 } },
+  { id: 2, label: "Frais de notaire (estimés)", category: "Achat", isGlobal: true, values: { pessimistic: 25600, realistic: 25600, optimistic: 25600 } },
+  { id: 3, label: "Frais d'agence", category: "Achat", isGlobal: true, values: { pessimistic: 18000, realistic: 18000, optimistic: 18000 } },
+  { id: 4, label: "Travaux de rénovation", category: "Travaux", isGlobal: true, values: { pessimistic: 160000, realistic: 140000, optimistic: 130000 } },
+  { id: 5, label: "Frais administratifs & divers", category: "Gestion", isGlobal: true, values: { pessimistic: 15000, realistic: 12000, optimistic: 10000 } },
+  { id: 6, label: "Honoraires (Architecte, Géomètre)", category: "Gestion", isGlobal: true, values: { pessimistic: 8500, realistic: 8500, optimistic: 8500 } },
+  { id: 7, label: "Frais financiers (Intérêts)", category: "Finance", isGlobal: true, values: { pessimistic: 20000, realistic: 15000, optimistic: 12000 } },
+  { id: 8, label: "Imprévus (5%)", category: "Sécurité", isGlobal: true, values: { pessimistic: 10000, realistic: 7500, optimistic: 5000 } },
 ];
 
 const Index = () => {
   const [scenarios, setScenarios] = useState(() => {
-    const saved = localStorage.getItem('immo_scenarios');
+    const saved = localStorage.getItem('immo_scenarios_v3');
     return saved ? JSON.parse(saved) : INITIAL_SCENARIOS;
   });
 
   const [lots, setLots] = useState(() => {
-    const saved = localStorage.getItem('immo_lots_v2');
+    const saved = localStorage.getItem('immo_lots_v3');
     return saved ? JSON.parse(saved) : INITIAL_LOTS;
   });
 
   const [costs, setCosts] = useState(() => {
-    const saved = localStorage.getItem('immo_costs_v2');
+    const saved = localStorage.getItem('immo_costs_v3');
     return saved ? JSON.parse(saved) : INITIAL_COSTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('immo_scenarios', JSON.stringify(scenarios));
-    localStorage.setItem('immo_lots_v2', JSON.stringify(lots));
-    localStorage.setItem('immo_costs_v2', JSON.stringify(costs));
+    localStorage.setItem('immo_scenarios_v3', JSON.stringify(scenarios));
+    localStorage.setItem('immo_lots_v3', JSON.stringify(lots));
+    localStorage.setItem('immo_costs_v3', JSON.stringify(costs));
   }, [scenarios, lots, costs]);
 
   const defaultScenario = useMemo(() => scenarios.find(s => s.isDefault) || scenarios[0], [scenarios]);
 
   const calculateTotals = (scenarioId: string) => {
     const caTotal = lots.reduce((acc, lot) => acc + (lot.prices[scenarioId] || 0), 0);
-    const costTotal = costs.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
+    // Filter costs: global ones + specific ones for this scenario
+    const relevantCosts = costs.filter(c => c.isGlobal || c.targetScenarioId === scenarioId);
+    const costTotal = relevantCosts.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
     const margin = caTotal - costTotal;
     const profitability = costTotal > 0 ? (margin / costTotal) * 100 : 0;
     return { caTotal, costTotal, margin, profitability };
@@ -78,15 +80,19 @@ const Index = () => {
     showSuccess("Lot ajouté");
   };
 
-  const handleAddCost = (newCostData) => {
+  const handleAddCost = (newCostData, scenarioId?: string) => {
     const newCost = {
       id: Date.now(),
       label: newCostData.label,
       category: newCostData.category || "Divers",
-      values: scenarios.reduce((acc, s) => ({ ...acc, [s.id]: Number(newCostData.value) }), {})
+      isGlobal: !scenarioId,
+      targetScenarioId: scenarioId,
+      values: scenarioId 
+        ? { [scenarioId]: Number(newCostData.value) }
+        : scenarios.reduce((acc, s) => ({ ...acc, [s.id]: Number(newCostData.value) }), {})
     };
     setCosts([...costs, newCost]);
-    showSuccess("Poste de coût ajouté");
+    showSuccess(scenarioId ? "Coût spécifique ajouté" : "Poste de coût global ajouté");
   };
 
   const handleDeleteCost = (id: number) => {
@@ -125,7 +131,8 @@ const Index = () => {
     setScenarios([...scenarios, newScenario]);
     
     setLots(lots.map(lot => ({ ...lot, prices: { ...lot.prices, [id]: lot.prices[defaultScenario.id] } })));
-    setCosts(costs.map(cost => ({ ...cost, values: { ...cost.values, [id]: cost.values[defaultScenario.id] } })));
+    // Only copy global costs to the new scenario
+    setCosts(costs.map(cost => cost.isGlobal ? { ...cost, values: { ...cost.values, [id]: cost.values[defaultScenario.id] } } : cost));
     
     showSuccess("Nouveau scénario créé");
   };
@@ -189,6 +196,7 @@ const Index = () => {
                 onUpdate={handleUpdateScenario}
                 onSetDefault={handleSetDefaultScenario}
                 onAddScenario={handleAddScenario}
+                onAddSpecificCost={handleAddCost}
                 calculateTotals={calculateTotals}
               />
             </div>

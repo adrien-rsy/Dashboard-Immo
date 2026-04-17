@@ -25,7 +25,9 @@ const CostBreakdown = ({ costs, scenarioId, onAdd, onDelete }: { costs: any[], s
   const [isOpen, setIsOpen] = useState(false);
   const [newCost, setNewCost] = useState({ label: '', value: '', category: 'Divers' });
 
-  const total = costs.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
+  // Filter costs: global ones + specific ones for this scenario
+  const relevantCosts = costs.filter(c => c.isGlobal || c.targetScenarioId === scenarioId);
+  const total = relevantCosts.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +52,7 @@ const CostBreakdown = ({ costs, scenarioId, onAdd, onDelete }: { costs: any[], s
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] rounded-[2rem]">
             <DialogHeader>
-              <DialogTitle>Nouveau poste de coût</DialogTitle>
+              <DialogTitle>Nouveau poste de coût global</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 py-4">
               <div className="space-y-2">
@@ -67,9 +69,9 @@ const CostBreakdown = ({ costs, scenarioId, onAdd, onDelete }: { costs: any[], s
                   <Input id="category" placeholder="ex: Gestion" value={newCost.category} onChange={e => setNewCost({...newCost, category: e.target.value})} />
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 italic">Ce montant sera appliqué par défaut à tous les scénarios.</p>
+              <p className="text-[10px] text-gray-400 italic">Ce coût sera ajouté à TOUS les scénarios.</p>
               <DialogFooter>
-                <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Ajouter le poste</button>
+                <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Ajouter partout</button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -77,11 +79,17 @@ const CostBreakdown = ({ costs, scenarioId, onAdd, onDelete }: { costs: any[], s
       </div>
 
       <div className="flex-1 space-y-4">
-        {costs.map((cost) => (
+        {relevantCosts.map((cost) => (
           <div key={cost.id} className="flex items-center justify-between group">
             <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-200 group-hover:bg-black transition-colors" />
-              <span className="text-sm text-gray-600 group-hover:text-black transition-colors">{cost.label}</span>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full transition-colors",
+                cost.isGlobal ? "bg-gray-200 group-hover:bg-black" : "bg-blue-400"
+              )} />
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-600 group-hover:text-black transition-colors">{cost.label}</span>
+                {!cost.isGlobal && <span className="text-[8px] text-blue-500 font-bold uppercase">Spécifique</span>}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenarioId] || 0)}</span>

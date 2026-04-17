@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Wallet } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -22,22 +22,36 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddScenario, calculateTotals }: any) => {
+const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddScenario, onAddSpecificCost, calculateTotals }: any) => {
   const [editingScenario, setEditingScenario] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
+  const [showAddCost, setShowAddCost] = useState(false);
+  const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '' });
 
   const handleOpenEdit = (scenario: any) => {
     setEditingScenario(scenario);
+    // Filter costs relevant to this scenario for editing
+    const relevantCosts = costs.filter((c: any) => c.isGlobal || c.targetScenarioId === scenario.id);
+    
     setEditForm({
       metadata: { name: scenario.name, duration: scenario.duration },
       lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] }), {}),
-      costValues: costs.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] }), {})
+      costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] }), {})
     });
   };
 
   const handleSave = () => {
     onUpdate(editingScenario.id, editForm);
     setEditingScenario(null);
+  };
+
+  const handleAddSpecific = () => {
+    if (!newSpecificCost.label || !newSpecificCost.value) return;
+    onAddSpecificCost(newSpecificCost, editingScenario.id);
+    setNewSpecificCost({ label: '', value: '' });
+    setShowAddCost(false);
+    // Re-open edit to refresh the list (or we could update editForm locally)
+    handleOpenEdit(editingScenario);
   };
 
   return (
@@ -57,7 +71,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {scenarios.map((s: any) => {
-          const { caTotal, costTotal, margin, profitability } = calculateTotals(s.id);
+          const { caTotal, margin, profitability } = calculateTotals(s.id);
           const Icon = s.icon === 'TrendingDown' ? TrendingDown : s.icon === 'TrendingUp' ? TrendingUp : Zap;
           
           return (
@@ -189,16 +203,55 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
 
               {/* Costs */}
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Structure des coûts</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Structure des coûts</h4>
+                  <button 
+                    onClick={() => setShowAddCost(!showAddCost)}
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Ajouter un coût spécifique
+                  </button>
+                </div>
+
+                {showAddCost && (
+                  <div className="mb-6 p-4 bg-blue-50 rounded-2xl space-y-3 border border-blue-100">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input 
+                        placeholder="Libellé (ex: Aléa)" 
+                        value={newSpecificCost.label}
+                        onChange={e => setNewSpecificCost({...newSpecificCost, label: e.target.value})}
+                        className="bg-white"
+                      />
+                      <Input 
+                        type="number" 
+                        placeholder="Montant (€)" 
+                        value={newSpecificCost.value}
+                        onChange={e => setNewSpecificCost({...newSpecificCost, value: e.target.value})}
+                        className="bg-white"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleAddSpecific}
+                      className="w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all"
+                    >
+                      Confirmer l'ajout au scénario
+                    </button>
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  {costs.map((cost: any) => (
+                  {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
                     <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl">
-                      <span className="text-sm font-medium text-gray-600">{cost.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-600">{cost.label}</span>
+                        {!cost.isGlobal && <span className="text-[8px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full font-bold uppercase">Spécifique</span>}
+                      </div>
                       <div className="relative w-40">
                         <Input 
                           type="number"
                           className="pr-8"
-                          value={editForm?.costValues[cost.id]} 
+                          value={editForm?.costValues[cost.id] || 0} 
                           onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
