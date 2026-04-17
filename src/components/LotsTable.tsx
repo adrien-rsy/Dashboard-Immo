@@ -1,18 +1,51 @@
 "use client";
 
-import React from 'react';
-import { Plus, MoreHorizontal, Home, Layers, Maximize } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, MoreHorizontal, Home, Maximize, Trash2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const lots = [
-  { id: 1, name: 'Lot 01', type: 'Appartement', level: '1er étage', surface: '42 m²', status: 'Disponible', price: '168 000 €', notes: 'T2 avec balcon' },
-  { id: 2, name: 'Lot 02', type: 'Appartement', level: '2e étage', surface: '38 m²', status: 'Optionné', price: '154 000 €', notes: 'T2 traversant' },
-  { id: 3, name: 'Lot 03', type: 'Combles', level: '3e étage', surface: '30 m²', status: 'Disponible', price: '96 000 €', notes: 'À aménager' },
-  { id: 4, name: 'Lot 04', type: 'Local Pro', level: 'RDC', surface: '28 m²', status: 'Vendu', price: '115 000 €', notes: 'Vitrine rue' },
-];
+const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const LotsTable = () => {
+const LotsTable = ({ lots, onAdd, onDelete }: { lots: any[], onAdd: (lot: any) => void, onDelete: (id: number) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [newLot, setNewLot] = useState({
+    name: '',
+    type: 'Appartement',
+    level: '',
+    surface: '',
+    status: 'Disponible',
+    price: '',
+    notes: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAdd({
+      ...newLot,
+      price: Number(newLot.price),
+      surface: `${newLot.surface} m²`
+    });
+    setIsOpen(false);
+    setNewLot({ name: '', type: 'Appartement', level: '', surface: '', status: 'Disponible', price: '', notes: '' });
+  };
+
   return (
     <div className="bg-white rounded-[2.5rem] shadow-sm overflow-hidden">
       <div className="p-8 flex items-center justify-between border-b border-gray-50">
@@ -20,10 +53,49 @@ const LotsTable = () => {
           <h3 className="text-xl font-bold">Détail des lots</h3>
           <p className="text-sm text-gray-500 mt-1">Inventaire des unités de l'opération</p>
         </div>
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-all shadow-lg shadow-black/10">
-          <Plus className="w-4 h-4" />
-          Ajouter un lot
-        </button>
+        
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-all shadow-lg shadow-black/10">
+              <Plus className="w-4 h-4" />
+              Ajouter un lot
+            </button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] rounded-[2rem]">
+            <DialogHeader>
+              <DialogTitle>Nouveau Lot</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nom du lot</Label>
+                  <Input id="name" placeholder="ex: Lot 05" value={newLot.name} onChange={e => setNewLot({...newLot, name: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Input id="type" placeholder="ex: T3" value={newLot.type} onChange={e => setNewLot({...newLot, type: e.target.value})} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="surface">Surface (m²)</Label>
+                  <Input id="surface" type="number" placeholder="45" value={newLot.surface} onChange={e => setNewLot({...newLot, surface: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Prix estimé (€)</Label>
+                  <Input id="price" type="number" placeholder="150000" value={newLot.price} onChange={e => setNewLot({...newLot, price: e.target.value})} required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">Niveau / Étage</Label>
+                <Input id="level" placeholder="ex: 1er étage" value={newLot.level} onChange={e => setNewLot({...newLot, level: e.target.value})} />
+              </div>
+              <DialogFooter>
+                <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Enregistrer le lot</button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <div className="overflow-x-auto">
@@ -74,12 +146,22 @@ const LotsTable = () => {
                   </Badge>
                 </td>
                 <td className="px-8 py-5">
-                  <span className="text-sm font-bold text-gray-900">{lot.price}</span>
+                  <span className="text-sm font-bold text-gray-900">{formatEuro(lot.price)}</span>
                 </td>
                 <td className="px-8 py-5 text-right">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => onDelete(lot.id)}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </td>
               </tr>
             ))}

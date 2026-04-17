@@ -34,19 +34,21 @@ const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIP
   </div>
 );
 
-const ProjectKPIs = () => {
+const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+
+const ProjectKPIs = ({ totals }: { totals: any }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <KPICard 
         variant="dark"
         label="Marge Estimée" 
-        value="93 400 €" 
-        subValue="+15.3% du CA"
+        value={formatEuro(totals.margin)} 
+        subValue={`+${totals.profitability.toFixed(1)}% du CA`}
         icon={TrendingUp}
       />
       <KPICard 
         label="Coût Total" 
-        value="516 600 €" 
+        value={formatEuro(totals.costTotal)} 
         subValue="Budget maîtrisé"
         icon={Wallet}
       />
@@ -64,13 +66,13 @@ const ProjectKPIs = () => {
       />
       <KPICard 
         label="CA Estimé" 
-        value="610 000 €" 
-        subValue="4 lots identifiés"
+        value={formatEuro(totals.caTotal)} 
+        subValue="Lots identifiés"
         icon={BarChart3}
       />
       <KPICard 
         label="Rentabilité" 
-        value="18.1 %" 
+        value={`${totals.profitability.toFixed(1)} %`} 
         subValue="Objectif : > 15%"
         icon={TrendingUp}
       />
