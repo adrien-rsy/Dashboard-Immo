@@ -3,6 +3,7 @@
 import React from 'react';
 import { Plus, MoreHorizontal, Home, Layers, Maximize } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const lots = [
   { id: 1, name: 'Lot 01', type: 'Appartement', level: '1er étage', surface: '42 m²', status: 'Disponible', price: '168 000 €', notes: 'T2 avec balcon' },
