@@ -1,46 +1,117 @@
 "use client";
 
-import React from 'react';
-import { PieChart, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { PieChart, Plus, Trash2, MoreVertical } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const CostBreakdown = ({ costs, scenarioId }: { costs: any[], scenarioId: string }) => {
+const CostBreakdown = ({ costs, scenarioId, onAdd, onDelete }: { costs: any[], scenarioId: string, onAdd: (cost: any) => void, onDelete: (id: number) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [newCost, setNewCost] = useState({ label: '', value: '', category: 'Divers' });
+
   const total = costs.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAdd(newCost);
+    setIsOpen(false);
+    setNewCost({ label: '', value: '', category: 'Divers' });
+  };
+
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm h-full">
+    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm h-full flex flex-col">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h3 className="text-xl font-bold">Structure des coûts</h3>
-          <p className="text-sm text-gray-500 mt-1">Détail pour le scénario actif</p>
+          <p className="text-sm text-gray-500 mt-1">Détail du scénario actif</p>
         </div>
-        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
-          <PieChart className="w-6 h-6 text-gray-400" />
-        </div>
+        
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <button className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-gray-600">
+              <Plus className="w-5 h-5" />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] rounded-[2rem]">
+            <DialogHeader>
+              <DialogTitle>Nouveau poste de coût</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="label">Libellé du coût</Label>
+                <Input id="label" placeholder="ex: Assurance DO" value={newCost.label} onChange={e => setNewCost({...newCost, label: e.target.value})} required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="value">Montant de base (€)</Label>
+                  <Input id="value" type="number" placeholder="5000" value={newCost.value} onChange={e => setNewCost({...newCost, value: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Catégorie</Label>
+                  <Input id="category" placeholder="ex: Gestion" value={newCost.category} onChange={e => setNewCost({...newCost, category: e.target.value})} />
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 italic">Ce montant sera appliqué par défaut à tous les scénarios.</p>
+              <DialogFooter>
+                <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Ajouter le poste</button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="space-y-4">
-        {costs.map((cost, idx) => (
-          <div key={idx} className="flex items-center justify-between group cursor-default">
+      <div className="flex-1 space-y-4">
+        {costs.map((cost) => (
+          <div key={cost.id} className="flex items-center justify-between group">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-gray-200 group-hover:bg-black transition-colors" />
               <span className="text-sm text-gray-600 group-hover:text-black transition-colors">{cost.label}</span>
             </div>
-            <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenarioId] || 0)}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenarioId] || 0)}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-50 rounded-lg transition-all">
+                    <MoreVertical className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-xl">
+                  <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => onDelete(cost.id)}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="mt-8 pt-6 border-t border-gray-100">
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+        <div className="flex items-center justify-between p-5 bg-gray-50 rounded-[2rem]">
           <div>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Général</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Coûts</p>
             <p className="text-2xl font-black text-black">{formatEuro(total)}</p>
           </div>
-          <button className="p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
-            <ArrowRight className="w-5 h-5 text-black" />
-          </button>
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+            <PieChart className="w-6 h-6 text-black" />
+          </div>
         </div>
       </div>
     </div>

@@ -78,6 +78,22 @@ const Index = () => {
     showSuccess("Lot ajouté");
   };
 
+  const handleAddCost = (newCostData) => {
+    const newCost = {
+      id: Date.now(),
+      label: newCostData.label,
+      category: newCostData.category || "Divers",
+      values: scenarios.reduce((acc, s) => ({ ...acc, [s.id]: Number(newCostData.value) }), {})
+    };
+    setCosts([...costs, newCost]);
+    showSuccess("Poste de coût ajouté");
+  };
+
+  const handleDeleteCost = (id: number) => {
+    setCosts(costs.filter(c => c.id !== id));
+    showSuccess("Poste de coût supprimé");
+  };
+
   const handleUpdateScenario = (scenarioId: string, updatedData: any) => {
     setScenarios(scenarios.map(s => s.id === scenarioId ? { ...s, ...updatedData.metadata } : s));
     
@@ -177,7 +193,12 @@ const Index = () => {
               />
             </div>
             <div className="xl:col-span-1">
-              <CostBreakdown costs={costs} scenarioId={defaultScenario.id} />
+              <CostBreakdown 
+                costs={costs} 
+                scenarioId={defaultScenario.id} 
+                onAdd={handleAddCost}
+                onDelete={handleDeleteCost}
+              />
             </div>
           </div>
         </div>
