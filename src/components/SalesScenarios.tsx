@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Wallet, Calculator } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -28,10 +28,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
   const [showAddCost, setShowAddCost] = useState(false);
   const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '' });
 
-  // Effect to handle opening the editor for a newly created scenario
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
-    // If the last scenario was created very recently (within 2 seconds) and we aren't editing anything
     if (lastScenario && lastScenario.id.startsWith('scenario_') && !editingScenario && (Date.now() - parseInt(lastScenario.id.split('_')[1])) < 2000) {
       handleOpenEdit(lastScenario);
     }
@@ -65,7 +63,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
       <div className="flex items-center justify-between mb-8">
         <div>
           <h3 className="text-xl font-bold">Scénarios de vente</h3>
-          <p className="text-sm text-gray-500 mt-1">Hypothèses de revente et coûts associés</p>
+          <p className="text-sm text-gray-500 mt-1">Hypothèses de revente et coûts</p>
         </div>
         <button 
           onClick={onAddScenario}
@@ -156,8 +154,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={() => setEditingScenario(null)}>
-        <DialogContent className="sm:max-w-[650px] rounded-[2.5rem] max-h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+        <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
                 <Calculator className="text-white w-5 h-5" />
@@ -167,8 +165,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
             <p className="text-sm text-gray-500">Ajustez les prix de revente et les coûts pour cette simulation.</p>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 px-8">
-            <div className="space-y-10 py-6">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="px-8 py-6 space-y-10">
               {/* Infos Générales */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -198,12 +196,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {lots.map((lot: any) => (
-                    <div key={lot.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
+                    <div key={lot.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold">{lot.name}</span>
                         <span className="text-[10px] text-gray-400">{lot.surface} m²</span>
                       </div>
-                      <div className="relative w-32">
+                      <div className="relative w-28">
                         <Input 
                           type="number"
                           className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
@@ -267,7 +265,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
 
                 <div className="space-y-2">
                   {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
-                    <div key={cost.id} className="flex items-center justify-between gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
+                    <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-2 h-2 rounded-full",
@@ -278,7 +276,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                           <span className="text-[9px] text-gray-400 uppercase font-medium">{cost.category}</span>
                         </div>
                       </div>
-                      <div className="relative w-32">
+                      <div className="relative w-28">
                         <Input 
                           type="number"
                           className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
@@ -294,7 +292,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-gray-50/50 border-t border-gray-100">
+          <DialogFooter className="p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
             <button 
               onClick={handleSave}
               className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
