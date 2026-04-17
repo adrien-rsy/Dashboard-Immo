@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { PieChart, Plus, Trash2, MoreVertical } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
