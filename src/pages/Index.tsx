@@ -79,10 +79,8 @@ const Index = () => {
   };
 
   const handleUpdateScenario = (scenarioId: string, updatedData: any) => {
-    // Update scenario metadata
     setScenarios(scenarios.map(s => s.id === scenarioId ? { ...s, ...updatedData.metadata } : s));
     
-    // Update lot prices for this scenario
     if (updatedData.lotPrices) {
       setLots(lots.map(lot => ({
         ...lot,
@@ -90,7 +88,6 @@ const Index = () => {
       })));
     }
 
-    // Update cost values for this scenario
     if (updatedData.costValues) {
       setCosts(costs.map(cost => ({
         ...cost,
@@ -111,7 +108,6 @@ const Index = () => {
     const newScenario = { id, name: 'Nouveau Scénario', icon: 'Zap', isDefault: false, duration: 12 };
     setScenarios([...scenarios, newScenario]);
     
-    // Initialize prices and costs for the new scenario based on the default one
     setLots(lots.map(lot => ({ ...lot, prices: { ...lot.prices, [id]: lot.prices[defaultScenario.id] } })));
     setCosts(costs.map(cost => ({ ...cost, values: { ...cost.values, [id]: cost.values[defaultScenario.id] } })));
     
@@ -160,7 +156,7 @@ const Index = () => {
             </div>
           </div>
 
-          <ProjectKPIs totals={totals} duration={defaultScenario.duration} />
+          <ProjectKPIs totals={totals} />
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
             <div className="xl:col-span-2 space-y-8">

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { TrendingUp, Clock, Wallet, Target, BarChart3 } from 'lucide-react';
+import { TrendingUp, Wallet, BarChart3 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface KPIProps {
@@ -36,45 +36,27 @@ const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIP
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const ProjectKPIs = ({ totals, duration }: { totals: any, duration: number }) => {
+const ProjectKPIs = ({ totals }: { totals: any }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <KPICard 
         variant="dark"
         label="Marge Estimée" 
         value={formatEuro(totals.margin)} 
-        subValue={`+${totals.profitability.toFixed(1)}% sur coût`}
+        subValue={`+${totals.profitability.toFixed(1)}% sur coût total`}
         icon={TrendingUp}
       />
       <KPICard 
         label="Coût Total" 
         value={formatEuro(totals.costTotal)} 
-        subValue="Budget opération"
+        subValue="Budget global de l'opération"
         icon={Wallet}
-      />
-      <KPICard 
-        label="Prix d'Achat" 
-        value="320 000 €" 
-        subValue="Net vendeur"
-        icon={Target}
-      />
-      <KPICard 
-        label="Durée Portage" 
-        value={`${duration} mois`} 
-        subValue="Estimation portage"
-        icon={Clock}
       />
       <KPICard 
         label="CA Estimé" 
         value={formatEuro(totals.caTotal)} 
-        subValue="Total revente"
+        subValue="Total revente prévisionnel"
         icon={BarChart3}
-      />
-      <KPICard 
-        label="Rentabilité" 
-        value={`${totals.profitability.toFixed(1)} %`} 
-        subValue="Marge / Coût total"
-        icon={TrendingUp}
       />
     </div>
   );
