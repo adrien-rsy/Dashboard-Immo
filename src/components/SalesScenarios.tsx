@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Wallet } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Wallet, Calculator } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -28,14 +28,22 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
   const [showAddCost, setShowAddCost] = useState(false);
   const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '' });
 
+  // Effect to handle opening the editor for a newly created scenario
+  useEffect(() => {
+    const lastScenario = scenarios[scenarios.length - 1];
+    // If the last scenario was created very recently (within 2 seconds) and we aren't editing anything
+    if (lastScenario && lastScenario.id.startsWith('scenario_') && !editingScenario && (Date.now() - parseInt(lastScenario.id.split('_')[1])) < 2000) {
+      handleOpenEdit(lastScenario);
+    }
+  }, [scenarios.length]);
+
   const handleOpenEdit = (scenario: any) => {
     setEditingScenario(scenario);
-    // Filter costs relevant to this scenario for editing
     const relevantCosts = costs.filter((c: any) => c.isGlobal || c.targetScenarioId === scenario.id);
     
     setEditForm({
       metadata: { name: scenario.name, duration: scenario.duration },
-      lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] }), {}),
+      lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] || 0 }), {}),
       costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {})
     });
   };
@@ -48,17 +56,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
   const handleAddSpecific = () => {
     if (!newSpecificCost.label || !newSpecificCost.value) return;
     onAddSpecificCost(newSpecificCost, editingScenario.id);
-    
-    // Update local state to show the new cost immediately in the list
-    const tempId = Date.now(); // This is just for the local UI before the next render
-    setEditForm({
-      ...editForm,
-      costValues: { ...editForm.costValues, [tempId]: Number(newSpecificCost.value) }
-    });
-    
     setNewSpecificCost({ label: '', value: '' });
     setShowAddCost(false);
-    // The parent will re-render and we'll get the real costs via props
   };
 
   return (
@@ -66,13 +65,14 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
       <div className="flex items-center justify-between mb-8">
         <div>
           <h3 className="text-xl font-bold">Scénarios de vente</h3>
-          <p className="text-sm text-gray-500 mt-1">Gérez vos hypothèses de revente et coûts</p>
+          <p className="text-sm text-gray-500 mt-1">Hypothèses de revente et coûts associés</p>
         </div>
         <button 
           onClick={onAddScenario}
-          className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-gray-600"
+          className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all shadow-lg shadow-black/10"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
+          Nouveau scénario
         </button>
       </div>
 
@@ -129,7 +129,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-medium">Prix de vente</span>
+                  <span className="text-xs text-gray-400 font-medium">CA Estimé</span>
                   <span className="text-sm font-bold">{formatEuro(caTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -143,15 +143,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                     profitability > 15 ? "text-green-500" : profitability > 10 ? "text-blue-500" : "text-red-500"
                   )}>{profitability.toFixed(1)}%</span>
                 </div>
-                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                  <span className="text-xs text-gray-400 font-medium">Portage</span>
-                  <span className="text-xs font-bold text-gray-600">{s.duration} mois</span>
-                </div>
               </div>
               
               {s.isDefault && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-black text-white text-[8px] font-bold uppercase tracking-widest rounded-full">
-                  Par défaut
+                  Actif
                 </div>
               )}
             </div>
@@ -159,109 +155,137 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
         })}
       </div>
 
-      {/* Scenario Editor Dialog */}
       <Dialog open={!!editingScenario} onOpenChange={() => setEditingScenario(null)}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-8 pb-4">
-            <DialogTitle className="text-2xl font-black">Éditer le scénario : {editingScenario?.name}</DialogTitle>
+        <DialogContent className="sm:max-w-[650px] rounded-[2.5rem] max-h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                <Calculator className="text-white w-5 h-5" />
+              </div>
+              <DialogTitle className="text-2xl font-black">Configuration du scénario</DialogTitle>
+            </div>
+            <p className="text-sm text-gray-500">Ajustez les prix de revente et les coûts pour cette simulation.</p>
           </DialogHeader>
           
           <ScrollArea className="flex-1 px-8">
-            <div className="space-y-8 py-4">
-              {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-10 py-6">
+              {/* Infos Générales */}
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Nom du scénario</Label>
+                  <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
                   <Input 
+                    className="rounded-xl border-gray-100 focus:ring-black"
                     value={editForm?.metadata.name} 
                     onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, name: e.target.value}})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Durée portage (mois)</Label>
+                  <Label className="text-xs font-bold uppercase text-gray-400">Durée portage (mois)</Label>
                   <Input 
                     type="number"
+                    className="rounded-xl border-gray-100 focus:ring-black"
                     value={editForm?.metadata.duration} 
                     onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, duration: Number(e.target.value)}})}
                   />
                 </div>
               </div>
 
-              {/* Lot Prices */}
+              {/* Prix des Lots */}
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Prix de vente des lots</h4>
-                <div className="space-y-3">
+                <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-black rounded-full" />
+                  Prix de revente par lot
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {lots.map((lot: any) => (
-                    <div key={lot.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl">
-                      <span className="text-sm font-bold">{lot.name}</span>
-                      <div className="relative w-40">
+                    <div key={lot.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold">{lot.name}</span>
+                        <span className="text-[10px] text-gray-400">{lot.surface} m²</span>
+                      </div>
+                      <div className="relative w-32">
                         <Input 
                           type="number"
-                          className="pr-8"
+                          className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
                           value={editForm?.lotPrices[lot.id]} 
                           onChange={e => setEditForm({...editForm, lotPrices: {...editForm.lotPrices, [lot.id]: Number(e.target.value)}})}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Costs */}
+              {/* Structure des Coûts */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Structure des coûts</h4>
+                  <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-black rounded-full" />
+                    Structure des coûts
+                  </h4>
                   <button 
                     onClick={() => setShowAddCost(!showAddCost)}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-all"
                   >
                     <Plus className="w-3 h-3" />
-                    Ajouter un coût spécifique
+                    Coût spécifique
                   </button>
                 </div>
 
                 {showAddCost && (
-                  <div className="mb-6 p-4 bg-blue-50 rounded-2xl space-y-3 border border-blue-100">
+                  <div className="mb-6 p-5 bg-blue-50/50 rounded-2xl space-y-4 border border-blue-100 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-2 gap-3">
-                      <Input 
-                        placeholder="Libellé (ex: Aléa)" 
-                        value={newSpecificCost.label}
-                        onChange={e => setNewSpecificCost({...newSpecificCost, label: e.target.value})}
-                        className="bg-white"
-                      />
-                      <Input 
-                        type="number" 
-                        placeholder="Montant (€)" 
-                        value={newSpecificCost.value}
-                        onChange={e => setNewSpecificCost({...newSpecificCost, value: e.target.value})}
-                        className="bg-white"
-                      />
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-600">Libellé</Label>
+                        <Input 
+                          placeholder="ex: Aléa technique" 
+                          value={newSpecificCost.label}
+                          onChange={e => setNewSpecificCost({...newSpecificCost, label: e.target.value})}
+                          className="bg-white border-blue-100 h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-600">Montant (€)</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          value={newSpecificCost.value}
+                          onChange={e => setNewSpecificCost({...newSpecificCost, value: e.target.value})}
+                          className="bg-white border-blue-100 h-9 text-sm"
+                        />
+                      </div>
                     </div>
                     <button 
                       onClick={handleAddSpecific}
-                      className="w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all"
+                      className="w-full py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
                     >
-                      Confirmer l'ajout au scénario
+                      Ajouter au scénario
                     </button>
                   </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
-                    <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-600">{cost.label}</span>
-                        {!cost.isGlobal && <span className="text-[8px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full font-bold uppercase">Spécifique</span>}
+                    <div key={cost.id} className="flex items-center justify-between gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          cost.isGlobal ? "bg-gray-200" : "bg-blue-400"
+                        )} />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-700">{cost.label}</span>
+                          <span className="text-[9px] text-gray-400 uppercase font-medium">{cost.category}</span>
+                        </div>
                       </div>
-                      <div className="relative w-40">
+                      <div className="relative w-32">
                         <Input 
                           type="number"
-                          className="pr-8"
+                          className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
                           value={editForm?.costValues[cost.id] ?? 0} 
                           onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
                       </div>
                     </div>
                   ))}
@@ -270,12 +294,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 pt-4 border-t border-gray-50">
+          <DialogFooter className="p-8 bg-gray-50/50 border-t border-gray-100">
             <button 
               onClick={handleSave}
-              className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all"
+              className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
             >
-              Enregistrer les modifications
+              Valider les hypothèses
             </button>
           </DialogFooter>
         </DialogContent>
