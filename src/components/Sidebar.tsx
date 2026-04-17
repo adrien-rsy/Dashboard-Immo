@@ -29,9 +29,13 @@ const footerItems = [
   { icon: LogOut, label: 'Log out' },
 ];
 
-const Sidebar = () => {
+interface SidebarProps {
+  className?: string;
+}
+
+const Sidebar = ({ className }: SidebarProps) => {
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col p-6">
+    <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
       <div className="flex items-center gap-2 mb-10 px-2">
         <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
           <Wallet className="text-white w-5 h-5" />
@@ -60,15 +64,14 @@ const Sidebar = () => {
       </nav>
 
       <div className="mt-auto pt-6 border-t border-gray-100 space-y-1">
-        <div className="bg-black rounded-2xl p-4 mb-6 text-white relative overflow-hidden group">
+        <div className="bg-black rounded-2xl p-4 mb-6 text-white relative overflow-hidden group hidden sm:block">
           <div className="relative z-10">
             <h4 className="font-semibold mb-1">Upgrade to Pro</h4>
-            <p className="text-xs text-gray-400 mb-3">Get advanced analytics and multi-currency support.</p>
+            <p className="text-xs text-gray-400 mb-3">Get advanced analytics.</p>
             <button className="w-full py-2 bg-white text-black text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors">
               Upgrade
             </button>
           </div>
-          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
         </div>
 
         {footerItems.map((item) => (

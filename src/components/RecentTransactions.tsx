@@ -36,20 +36,18 @@ const transactions = [
 
 const RecentTransactions = () => {
   return (
-    <div className="bg-white rounded-[2.5rem] overflow-hidden">
-      <div className="p-8 flex items-center justify-between border-b border-gray-50">
+    <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden">
+      <div className="p-6 md:p-8 flex items-center justify-between border-b border-gray-50">
         <h3 className="text-lg font-bold">Recent Transactions</h3>
         <div className="flex items-center gap-2">
           <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors">
             <RefreshCcw className="w-4 h-4 text-gray-400" />
           </button>
-          <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors">
-            <ArrowUpRight className="w-4 h-4 text-gray-400" />
-          </button>
         </div>
       </div>
       
-      <div className="overflow-x-auto">
+      {/* Desktop Table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="text-xs text-gray-400 uppercase tracking-wider">
@@ -89,6 +87,35 @@ const RecentTransactions = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile List */}
+      <div className="md:hidden divide-y divide-gray-50">
+        {transactions.map((tx) => (
+          <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 rounded-xl">
+                <AvatarImage src={tx.image} />
+                <AvatarFallback>{tx.name[0]}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-semibold">{tx.name}</p>
+                <p className="text-xs text-gray-500">{tx.date}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-sm font-bold ${tx.amount.startsWith('+') ? 'text-green-600' : 'text-gray-900'}`}>
+                {tx.amount}
+              </p>
+              <span className={`
+                text-[9px] font-bold uppercase tracking-wider
+                ${tx.status === 'Completed' ? 'text-gray-400' : 'text-amber-600'}
+              `}>
+                {tx.status}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

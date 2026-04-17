@@ -12,19 +12,20 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 const Index = () => {
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 font-sans selection:bg-black selection:text-white">
-      <Sidebar />
+      {/* Desktop Sidebar */}
+      <Sidebar className="hidden lg:flex border-r border-gray-100" />
       
       <main className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
         
-        <div className="flex-1 overflow-y-auto px-8 pb-8">
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8">
           {/* Header Filters */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex bg-white p-1 rounded-2xl shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex bg-white p-1 rounded-2xl shadow-sm w-full sm:w-auto overflow-x-auto">
               {['Day', 'Week', 'Month', 'Year'].map((filter) => (
                 <button
                   key={filter}
-                  className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 sm:flex-none px-4 md:px-6 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                     filter === 'Month' ? 'bg-gray-400 text-white shadow-md' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -33,14 +34,14 @@ const Index = () => {
               ))}
             </div>
             
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-2xl shadow-sm text-sm font-medium text-gray-600 hover:text-black transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-2xl shadow-sm text-sm font-medium text-gray-600 hover:text-black transition-colors w-full sm:w-auto justify-center">
               <CalendarIcon className="w-4 h-4" />
-              <span>1 Sep 2024 - 31 Sep 2024</span>
+              <span className="whitespace-nowrap">1 Sep 2024 - 31 Sep 2024</span>
             </button>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatCard 
               variant="dark"
               title="Total Balance" 
@@ -69,8 +70,8 @@ const Index = () => {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
+            <div className="lg:col-span-2 h-[400px] md:h-auto">
               <CashFlowChart />
             </div>
             <div className="lg:col-span-1">
