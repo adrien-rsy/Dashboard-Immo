@@ -36,7 +36,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
     setEditForm({
       metadata: { name: scenario.name, duration: scenario.duration },
       lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] }), {}),
-      costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] }), {})
+      costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {})
     });
   };
 
@@ -48,10 +48,17 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
   const handleAddSpecific = () => {
     if (!newSpecificCost.label || !newSpecificCost.value) return;
     onAddSpecificCost(newSpecificCost, editingScenario.id);
+    
+    // Update local state to show the new cost immediately in the list
+    const tempId = Date.now(); // This is just for the local UI before the next render
+    setEditForm({
+      ...editForm,
+      costValues: { ...editForm.costValues, [tempId]: Number(newSpecificCost.value) }
+    });
+    
     setNewSpecificCost({ label: '', value: '' });
     setShowAddCost(false);
-    // Re-open edit to refresh the list (or we could update editForm locally)
-    handleOpenEdit(editingScenario);
+    // The parent will re-render and we'll get the real costs via props
   };
 
   return (
@@ -251,7 +258,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                         <Input 
                           type="number"
                           className="pr-8"
-                          value={editForm?.costValues[cost.id] || 0} 
+                          value={editForm?.costValues[cost.id] ?? 0} 
                           onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
