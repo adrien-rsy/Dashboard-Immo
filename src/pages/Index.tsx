@@ -11,9 +11,9 @@ import { MapPin, Calendar, Share2, Download } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 
 const INITIAL_SCENARIOS = [
-  { id: 'pessimistic', name: 'Pessimiste', icon: 'TrendingDown', isDefault: false, duration: 18 },
-  { id: 'realistic', name: 'Réaliste', icon: 'Zap', isDefault: true, duration: 14 },
-  { id: 'optimistic', name: 'Optimiste', icon: 'TrendingUp', isDefault: false, duration: 12 },
+  { id: 'pessimistic', name: 'Pessimiste', icon: 'TrendingDown', isDefault: false, duration: 18, groupedSales: [] },
+  { id: 'realistic', name: 'Réaliste', icon: 'Zap', isDefault: true, duration: 14, groupedSales: [] },
+  { id: 'optimistic', name: 'Optimiste', icon: 'TrendingUp', isDefault: false, duration: 12, groupedSales: [] },
 ];
 
 const INITIAL_LOTS = [
@@ -36,38 +36,51 @@ const INITIAL_COSTS = [
 
 const Index = () => {
   const [scenarios, setScenarios] = useState(() => {
-    const saved = localStorage.getItem('immo_scenarios_v5');
+    const saved = localStorage.getItem('immo_scenarios_v6');
     return saved ? JSON.parse(saved) : INITIAL_SCENARIOS;
   });
 
   const [lots, setLots] = useState(() => {
-    const saved = localStorage.getItem('immo_lots_v5');
+    const saved = localStorage.getItem('immo_lots_v6');
     return saved ? JSON.parse(saved) : INITIAL_LOTS;
   });
 
   const [costs, setCosts] = useState(() => {
-    const saved = localStorage.getItem('immo_costs_v5');
+    const saved = localStorage.getItem('immo_costs_v6');
     return saved ? JSON.parse(saved) : INITIAL_COSTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('immo_scenarios_v5', JSON.stringify(scenarios));
-    localStorage.setItem('immo_lots_v5', JSON.stringify(lots));
-    localStorage.setItem('immo_costs_v5', JSON.stringify(costs));
+    localStorage.setItem('immo_scenarios_v6', JSON.stringify(scenarios));
+    localStorage.setItem('immo_lots_v6', JSON.stringify(lots));
+    localStorage.setItem('immo_costs_v6', JSON.stringify(costs));
   }, [scenarios, lots, costs]);
 
   const defaultScenario = useMemo(() => scenarios.find(s => s.isDefault) || scenarios[0], [scenarios]);
 
   const calculateTotals = (scenarioId: string) => {
-    const caTotal = lots.reduce((acc, lot) => acc + (lot.prices[scenarioId] || 0), 0);
+    const scenario = scenarios.find(s => s.id === scenarioId);
+    const groupedLotIds = new Set(scenario?.groupedSales?.flatMap(g => g.lotIds) || []);
+    
+    // CA from individual lots (not in a group)
+    const individualCa = lots
+      .filter(lot => !groupedLotIds.has(lot.id))
+      .reduce((acc, lot) => acc + (lot.prices[scenarioId] || 0), 0);
+    
+    // CA from grouped sales
+    const groupedCa = scenario?.groupedSales?.reduce((acc, g) => acc + (Number(g.price) || 0), 0) || 0;
+    
+    const caTotal = individualCa + groupedCa;
+    
     const relevantCosts = costs.filter(c => c.isGlobal || c.targetScenarioId === scenarioId);
     const costTotal = relevantCosts.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
     const margin = caTotal - costTotal;
     const profitability = costTotal > 0 ? (margin / costTotal) * 100 : 0;
+    
     return { caTotal, costTotal, margin, profitability };
   };
 
-  const totals = useMemo(() => calculateTotals(defaultScenario.id), [defaultScenario, lots, costs]);
+  const totals = useMemo(() => calculateTotals(defaultScenario.id), [defaultScenario, lots, costs, scenarios]);
 
   const handleAddLot = (newLotData) => {
     const newLot = {
@@ -82,7 +95,6 @@ const Index = () => {
   const handleUpdateLot = (id: number, updatedLotData: any) => {
     setLots(lots.map(lot => {
       if (lot.id === id) {
-        // Update the price for the current default scenario
         const updatedPrices = { ...lot.prices, [defaultScenario.id]: Number(updatedLotData.price) };
         return { ...lot, ...updatedLotData, prices: updatedPrices };
       }
@@ -112,7 +124,11 @@ const Index = () => {
   };
 
   const handleUpdateScenario = (scenarioId: string, updatedData: any) => {
-    setScenarios(scenarios.map(s => s.id === scenarioId ? { ...s, ...updatedData.metadata } : s));
+    setScenarios(scenarios.map(s => s.id === scenarioId ? { 
+      ...s, 
+      ...updatedData.metadata,
+      groupedSales: updatedData.groupedSales || s.groupedSales || []
+    } : s));
     
     if (updatedData.lotPrices) {
       setLots(lots.map(lot => ({
@@ -138,7 +154,7 @@ const Index = () => {
 
   const handleAddScenario = () => {
     const id = `scenario_${Date.now()}`;
-    const newScenario = { id, name: 'Nouveau Scénario', icon: 'Zap', isDefault: false, duration: 12 };
+    const newScenario = { id, name: 'Nouveau Scénario', icon: 'Zap', isDefault: false, duration: 12, groupedSales: [] };
     setScenarios([...scenarios, newScenario]);
     
     setLots(lots.map(lot => ({ ...lot, prices: { ...lot.prices, [id]: lot.prices[defaultScenario.id] } })));
@@ -196,6 +212,7 @@ const Index = () => {
               <LotsTable 
                 lots={lots} 
                 scenarios={scenarios} 
+                activeScenarioId={defaultScenario.id}
                 onAdd={handleAddLot} 
                 onUpdate={handleUpdateLot}
                 onDelete={(id) => setLots(lots.filter(l => l.id !== id))} 

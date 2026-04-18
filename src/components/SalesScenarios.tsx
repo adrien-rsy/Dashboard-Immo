@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
@@ -26,7 +27,9 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
   const [editingScenario, setEditingScenario] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [showAddCost, setShowAddCost] = useState(false);
+  const [showAddGroup, setShowAddGroup] = useState(false);
   const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '' });
+  const [newGroup, setNewGroup] = useState({ lotIds: [] as number[], price: '' });
 
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
@@ -42,7 +45,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
     setEditForm({
       metadata: { name: scenario.name, duration: scenario.duration },
       lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] || 0 }), {}),
-      costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {})
+      costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {}),
+      groupedSales: scenario.groupedSales || []
     });
   };
 
@@ -57,6 +61,30 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
     setNewSpecificCost({ label: '', value: '' });
     setShowAddCost(false);
   };
+
+  const handleCreateGroup = () => {
+    if (newGroup.lotIds.length < 2 || !newGroup.price) return;
+    const group = {
+      id: `group_${Date.now()}`,
+      lotIds: newGroup.lotIds,
+      price: Number(newGroup.price)
+    };
+    setEditForm({
+      ...editForm,
+      groupedSales: [...editForm.groupedSales, group]
+    });
+    setNewGroup({ lotIds: [], price: '' });
+    setShowAddGroup(false);
+  };
+
+  const removeGroup = (groupId: string) => {
+    setEditForm({
+      ...editForm,
+      groupedSales: editForm.groupedSales.filter((g: any) => g.id !== groupId)
+    });
+  };
+
+  const groupedLotIds = new Set(editForm?.groupedSales?.flatMap((g: any) => g.lotIds) || []);
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] shadow-sm h-full">
@@ -157,7 +185,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={() => setEditingScenario(null)}>
-        <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[750px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -165,7 +193,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
               </div>
               <DialogTitle className="text-2xl font-black">Configuration du scénario</DialogTitle>
             </div>
-            <p className="text-sm text-gray-500">Ajustez les prix de revente et les coûts pour cette simulation.</p>
+            <p className="text-sm text-gray-500">Ajustez les prix de revente (individuels ou groupés) et les coûts.</p>
           </DialogHeader>
           
           <ScrollArea className="flex-1 min-h-0">
@@ -191,14 +219,108 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                 </div>
               </div>
 
-              {/* Prix des Lots */}
+              {/* Groupes de Vente */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-purple-500 rounded-full" />
+                    Groupes de vente
+                  </h4>
+                  <button 
+                    onClick={() => setShowAddGroup(!showAddGroup)}
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-600 hover:bg-purple-50 px-2 py-1 rounded-lg transition-all"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Vente groupée
+                  </button>
+                </div>
+
+                {showAddGroup && (
+                  <div className="mb-6 p-5 bg-purple-50/50 rounded-2xl space-y-4 border border-purple-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-purple-600">Sélectionner les lots à grouper</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {lots.filter(l => !groupedLotIds.has(l.id)).map(lot => (
+                          <div key={lot.id} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-purple-100">
+                            <Checkbox 
+                              id={`group-lot-${lot.id}`}
+                              checked={newGroup.lotIds.includes(lot.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) setNewGroup({...newGroup, lotIds: [...newGroup.lotIds, lot.id]});
+                                else setNewGroup({...newGroup, lotIds: newGroup.lotIds.filter(id => id !== lot.id)});
+                              }}
+                            />
+                            <label htmlFor={`group-lot-${lot.id}`} className="text-xs font-medium cursor-pointer">{lot.name}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-purple-600">Prix global du groupe (€)</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        value={newGroup.price}
+                        onChange={e => setNewGroup({...newGroup, price: e.target.value})}
+                        className="bg-white border-purple-100 h-9 text-sm"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleCreateGroup}
+                      disabled={newGroup.lotIds.length < 2 || !newGroup.price}
+                      className="w-full py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-all shadow-md shadow-purple-200 disabled:opacity-50"
+                    >
+                      Créer le groupe de vente
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {editForm?.groupedSales?.map((group: any) => (
+                    <div key={group.id} className="flex items-center justify-between gap-4 p-4 bg-purple-50/30 border border-purple-100 rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <Layers className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-purple-900">
+                            Groupe : {group.lotIds.map(id => lots.find(l => l.id === id)?.name).join(', ')}
+                          </span>
+                          <span className="text-[9px] text-purple-400 uppercase font-bold">Vente groupée</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-28">
+                          <Input 
+                            type="number"
+                            className="pr-7 h-9 text-sm font-bold rounded-lg border-purple-200 bg-white"
+                            value={group.price} 
+                            onChange={e => {
+                              const updatedGroups = editForm.groupedSales.map((g: any) => 
+                                g.id === group.id ? { ...g, price: Number(e.target.value) } : g
+                              );
+                              setEditForm({ ...editForm, groupedSales: updatedGroups });
+                            }}
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-purple-400 font-bold">€</span>
+                        </div>
+                        <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prix des Lots Individuels */}
               <div>
                 <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-black rounded-full" />
-                  Prix de revente par lot
+                  Ventes individuelles
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {lots.map((lot: any) => (
+                  {lots.filter(l => !groupedLotIds.has(l.id)).map((lot: any) => (
                     <div key={lot.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold">{lot.name}</span>
@@ -215,6 +337,9 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                       </div>
                     </div>
                   ))}
+                  {lots.filter(l => !groupedLotIds.has(l.id)).length === 0 && (
+                    <p className="text-xs text-gray-400 italic col-span-2 py-4 text-center">Tous les lots sont actuellement groupés.</p>
+                  )}
                 </div>
               </div>
 

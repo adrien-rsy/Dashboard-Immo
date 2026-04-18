@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, MoreHorizontal, Home, Maximize, Trash2, Pencil } from 'lucide-react';
+import { Plus, MoreHorizontal, Home, Maximize, Trash2, Pencil, Layers } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -22,7 +22,7 @@ import {
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
-const LotsTable = ({ lots, scenarios, onAdd, onUpdate, onDelete }: { lots: any[], scenarios: any[], onAdd: (lot: any) => void, onUpdate: (id: number, lot: any) => void, onDelete: (id: number) => void }) => {
+const LotsTable = ({ lots, scenarios, activeScenarioId, onAdd, onUpdate, onDelete }: { lots: any[], scenarios: any[], activeScenarioId: string, onAdd: (lot: any) => void, onUpdate: (id: number, lot: any) => void, onDelete: (id: number) => void }) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingLot, setEditingLot] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -34,6 +34,9 @@ const LotsTable = ({ lots, scenarios, onAdd, onUpdate, onDelete }: { lots: any[]
     price: '',
     notes: ''
   });
+
+  const activeScenario = scenarios.find(s => s.id === activeScenarioId);
+  const groupedLotIds = new Set(activeScenario?.groupedSales?.flatMap(g => g.lotIds) || []);
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +64,7 @@ const LotsTable = ({ lots, scenarios, onAdd, onUpdate, onDelete }: { lots: any[]
       level: lot.level,
       surface: lot.surface,
       status: lot.status,
-      price: lot.prices[scenarios.find(s => s.isDefault)?.id || scenarios[0].id],
+      price: lot.prices[activeScenarioId],
       notes: lot.notes || ''
     });
   };
@@ -131,56 +134,76 @@ const LotsTable = ({ lots, scenarios, onAdd, onUpdate, onDelete }: { lots: any[]
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {lots.map((lot) => (
-              <tr key={lot.id} className="group hover:bg-gray-50/50 transition-colors">
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-white transition-colors">
-                      <Home className="w-5 h-5 text-gray-500" />
+            {lots.map((lot) => {
+              const isGroupedInActive = groupedLotIds.has(lot.id);
+              
+              return (
+                <tr key={lot.id} className={cn(
+                  "group transition-colors",
+                  isGroupedInActive ? "bg-purple-50/30 hover:bg-purple-50/50" : "hover:bg-gray-50/50"
+                )}>
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                        isGroupedInActive ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-500 group-hover:bg-white"
+                      )}>
+                        {isGroupedInActive ? <Layers className="w-5 h-5" /> : <Home className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold">{lot.name}</p>
+                          {isGroupedInActive && (
+                            <span className="px-1.5 py-0.5 bg-purple-600 text-white text-[8px] font-black uppercase rounded">Groupé</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-medium">{lot.type} - {lot.level}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold">{lot.name}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">{lot.type} - {lot.level}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Maximize className="w-3 h-3 text-gray-400" />
-                    {lot.surface} m²
-                  </div>
-                </td>
-                {scenarios.map(s => (
-                  <td key={s.id} className="px-8 py-5 text-center">
-                    <span className={cn(
-                      "text-sm font-bold",
-                      s.isDefault ? "text-black" : "text-gray-400"
-                    )}>
-                      {formatEuro(lot.prices[s.id] || 0)}
-                    </span>
                   </td>
-                ))}
-                <td className="px-8 py-5 text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(lot)}>
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => onDelete(lot.id)}>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
-            ))}
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Maximize className="w-3 h-3 text-gray-400" />
+                      {lot.surface} m²
+                    </div>
+                  </td>
+                  {scenarios.map(s => {
+                    const isLotGroupedInThisScenario = new Set(s.groupedSales?.flatMap(g => g.lotIds) || []).has(lot.id);
+                    
+                    return (
+                      <td key={s.id} className="px-8 py-5 text-center">
+                        <span className={cn(
+                          "text-sm font-bold",
+                          s.id === activeScenarioId ? "text-black" : "text-gray-400",
+                          isLotGroupedInThisScenario && "text-purple-600 italic"
+                        )}>
+                          {isLotGroupedInThisScenario ? "Prix groupé" : formatEuro(lot.prices[s.id] || 0)}
+                        </span>
+                      </td>
+                    );
+                  })}
+                  <td className="px-8 py-5 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                          <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(lot)}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => onDelete(lot.id)}>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
