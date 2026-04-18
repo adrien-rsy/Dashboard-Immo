@@ -92,32 +92,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       ...editForm,
       groupedSales: editForm.groupedSales.filter((g: any) => g.id !== groupId)
     });
-think
-The user wants me to continue the previous response which was cut off.
-The previous response was updating `src/components/SalesScenarios.tsx`.
-I need to finish the `SalesScenarios.tsx` file and then provide the `CostBreakdown.tsx` file as planned in the previous turn's thought process.
-
-Looking at the previous turn's output:
-It stopped at:
-```tsx
-  const removeGroup = (groupId: string) => {
-    setEditForm({
-      ...editForm,
-      groupedSales: editForm.groupedSales.filter((g: any) => g.id !== groupId)
-    });
-```
-
-I need to complete the `SalesScenarios.tsx` component and then write `src/components/CostBreakdown.tsx`.
-
-Plan:
-1. Complete `src/components/SalesScenarios.tsx`.
-2. Write `src/components/CostBreakdown.tsx` with the requested changes:
-    - Remove "3 points" menu.
-    - Make the whole row clickable.
-    - Align everything correctly.
-    - Add a "Supprimer" button in the edit dialog for custom costs.
-
-Let's finish `SalesScenarios.tsx` first.};
+  };
 
   const groupedLotIds = new Set(editForm?.groupedSales?.flatMap((g: any) => g.lotIds) || []);
 
