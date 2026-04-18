@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2 } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -109,7 +109,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         metadata: { 
           ...editForm.metadata, 
           apport: innerEditingCost.apport, 
-          interestRate: innerEditingCost.interestRate 
+          interestRate: innerEditingCost.interestRate,
+          duration: innerEditingCost.duration
         }
       });
     } else if (innerEditingCost.type === 'agence') {
@@ -253,22 +254,13 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
               <ScrollArea className="flex-1 min-h-0">
                 <div className="px-8 py-6 space-y-10">
                   {/* Infos Générales */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="max-w-md">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
                       <Input 
                         className="rounded-xl border-gray-100 focus:ring-black"
                         value={editForm.metadata.name} 
                         onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, name: e.target.value}})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-gray-400">Durée portage (mois)</Label>
-                      <Input 
-                        type="number"
-                        className="rounded-xl border-gray-100 focus:ring-black"
-                        value={editForm.metadata.duration} 
-                        onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, duration: Number(e.target.value)}})}
                       />
                     </div>
                   </div>
@@ -539,6 +531,10 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-4">
             {innerEditingCost?.type === 'finance' ? (
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
+                  <Input type="number" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({...innerEditingCost, duration: Number(e.target.value)})} />
+                </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
                   <Input type="number" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({...innerEditingCost, apport: Number(e.target.value)})} />
