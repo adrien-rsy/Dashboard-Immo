@@ -99,7 +99,11 @@ const Index = () => {
     // 2. Coûts de base (Acquisition, Travaux, Divers)
     const acqPrice = costs.find(c => c.type === 'acquisition')?.values[scenarioId] || 0;
     const travauxPrice = costs.find(c => c.type === 'travaux')?.values[scenarioId] || 0;
-    const otherCosts = costs.filter(c => !['acquisition', 'notaire', 'agence', 'finance', 'travaux'].includes(c.type))
+    
+    // Filtrer les coûts pour ne prendre que ceux du scénario ou globaux
+    const relevantCosts = costs.filter(c => c.isGlobal || c.targetScenarioId === scenarioId);
+    
+    const otherCosts = relevantCosts.filter(c => !['acquisition', 'notaire', 'agence', 'finance', 'travaux'].includes(c.type))
                             .reduce((acc, c) => acc + (c.values[scenarioId] || 0), 0);
 
     // 3. Coûts calculés (Notaire, Agence)
@@ -133,12 +137,14 @@ const Index = () => {
 
   // Inject calculated values into costs for display in CostBreakdown
   const displayCosts = useMemo(() => {
-    return costs.map(cost => {
-      if (cost.type === 'notaire') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.notaire } };
-      if (cost.type === 'agence') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.agence } };
-      if (cost.type === 'finance') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.finance } };
-      return cost;
-    });
+    return costs
+      .filter(c => c.isGlobal || c.targetScenarioId === defaultScenario.id)
+      .map(cost => {
+        if (cost.type === 'notaire') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.notaire } };
+        if (cost.type === 'agence') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.agence } };
+        if (cost.type === 'finance') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.finance } };
+        return cost;
+      });
   }, [costs, totals, defaultScenario.id]);
 
   const handleUpdateCost = (updatedCost: any) => {
@@ -148,7 +154,7 @@ const Index = () => {
 
   const handleAddCost = (newCostData, scenarioId?: string) => {
     const newCost = {
-      id: Date.now().toString(),
+      id: newCostData.id || Date.now().toString(),
       label: newCostData.label,
       category: newCostData.category || "Divers",
       isGlobal: !scenarioId,

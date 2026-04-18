@@ -70,7 +70,19 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
 
   const handleAddSpecific = () => {
     if (!newSpecificCost.label || !newSpecificCost.value) return;
-    onAddSpecificCost(newSpecificCost, editingScenario.id);
+    
+    const id = Date.now().toString();
+    const val = Number(newSpecificCost.value);
+    
+    // Ajouter au parent
+    onAddSpecificCost({ ...newSpecificCost, id }, editingScenario.id);
+    
+    // Mettre à jour le formulaire local immédiatement
+    setEditForm({
+      ...editForm,
+      costValues: { ...editForm.costValues, [id]: val }
+    });
+    
     setNewSpecificCost({ label: '', value: '' });
     setShowAddCost(false);
   };
