@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { PieChart, Plus, Trash2, MoreVertical, Calculator, Wallet, Percent, Calendar } from 'lucide-react';
+import { PieChart, Plus, Trash2, MoreVertical, Calculator, Wallet, Percent, Calendar, Settings2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
