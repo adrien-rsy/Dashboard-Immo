@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2 } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Building } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
@@ -45,7 +46,14 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     const relevantCosts = costs.filter((c: any) => c.isGlobal || c.targetScenarioId === scenario.id);
     
     setEditForm({
-      metadata: { name: scenario.name, duration: scenario.duration },
+      metadata: { 
+        name: scenario.name, 
+        duration: scenario.duration,
+        apport: scenario.apport || 0,
+        interestRate: scenario.interestRate || 0,
+        agenceRate: scenario.agenceRate || 5,
+        isNotaireReduced: scenario.isNotaireReduced || false
+      },
       lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] || 0 }), {}),
       costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {}),
       groupedSales: scenario.groupedSales || []
@@ -194,7 +202,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={() => setEditingScenario(null)}>
-        <DialogContent className="sm:max-w-[750px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -202,7 +210,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
               </div>
               <DialogTitle className="text-2xl font-black">Configuration du scénario</DialogTitle>
             </div>
-            <p className="text-sm text-gray-500">Ajustez les prix de revente (individuels ou groupés) et les coûts.</p>
+            <p className="text-sm text-gray-500">Ajustez les prix de revente, les coûts et les paramètres financiers.</p>
           </DialogHeader>
           
           <ScrollArea className="flex-1 min-h-0">
@@ -225,6 +233,79 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     value={editForm?.metadata.duration} 
                     onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, duration: Number(e.target.value)}})}
                   />
+                </div>
+              </div>
+
+              {/* Acquisition & Frais */}
+              <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                <h4 className="text-sm font-black uppercase tracking-widest text-black mb-6 flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Acquisition & Frais
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Prix net vendeur (€)</Label>
+                    <Input 
+                      type="number"
+                      className="rounded-xl bg-white"
+                      value={editForm?.costValues['acq'] || 0}
+                      onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, acq: Number(e.target.value)}})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Taux d'agence (%)</Label>
+                    <div className="relative">
+                      <Input 
+                        type="number"
+                        className="rounded-xl bg-white pr-8"
+                        value={editForm?.metadata.agenceRate}
+                        onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, agenceRate: Number(e.target.value)}})}
+                      />
+                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 col-span-full">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-bold">Frais de notaire réduits</Label>
+                      <p className="text-[10px] text-gray-500">Appliquer 3% au lieu de 8%</p>
+                    </div>
+                    <Switch 
+                      checked={editForm?.metadata.isNotaireReduced}
+                      onCheckedChange={checked => setEditForm({...editForm, metadata: {...editForm.metadata, isNotaireReduced: checked}})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Financement */}
+              <div className="p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
+                <h4 className="text-sm font-black uppercase tracking-widest text-blue-600 mb-6 flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Financement
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-blue-400">Apport personnel (€)</Label>
+                    <Input 
+                      type="number"
+                      className="rounded-xl bg-white"
+                      value={editForm?.metadata.apport}
+                      onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, apport: Number(e.target.value)}})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-blue-400">Taux annuel d'emprunt (%)</Label>
+                    <div className="relative">
+                      <Input 
+                        type="number"
+                        step="0.1"
+                        className="rounded-xl bg-white pr-8"
+                        value={editForm?.metadata.interestRate}
+                        onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, interestRate: Number(e.target.value)}})}
+                      />
+                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -352,84 +433,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                           className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
                           value={editForm?.lotPrices[lot.id]} 
                           onChange={e => setEditForm({...editForm, lotPrices: {...editForm.lotPrices, [lot.id]: Number(e.target.value)}})}
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
-                      </div>
-                    </div>
-                  ))}
-                  {lots.filter(l => !groupedLotIds.has(l.id)).length === 0 && (
-                    <p className="text-xs text-gray-400 italic col-span-2 py-4 text-center">Tous les lots sont actuellement groupés.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Structure des Coûts */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
-                    <div className="w-1.5 h-4 bg-black rounded-full" />
-                    Structure des coûts
-                  </h4>
-                  <button 
-                    onClick={() => setShowAddCost(!showAddCost)}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-all"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Coût spécifique
-                  </button>
-                </div>
-
-                {showAddCost && (
-                  <div className="mb-6 p-5 bg-blue-50/50 rounded-2xl space-y-4 border border-blue-100 animate-in fade-in slide-in-from-top-2">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-blue-600">Libellé</Label>
-                        <Input 
-                          placeholder="ex: Aléa technique" 
-                          value={newSpecificCost.label}
-                          onChange={e => setNewSpecificCost({...newSpecificCost, label: e.target.value})}
-                          className="bg-white border-blue-100 h-9 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-blue-600">Montant (€)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
-                          value={newSpecificCost.value}
-                          onChange={e => setNewSpecificCost({...newSpecificCost, value: e.target.value})}
-                          className="bg-white border-blue-100 h-9 text-sm"
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={handleAddSpecific}
-                      className="w-full py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
-                    >
-                      Ajouter au scénario
-                    </button>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
-                    <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          cost.isGlobal ? "bg-gray-200" : "bg-blue-400"
-                        )} />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-700">{cost.label}</span>
-                          <span className="text-[9px] text-gray-400 uppercase font-medium">{cost.category}</span>
-                        </div>
-                      </div>
-                      <div className="relative w-28">
-                        <Input 
-                          type="number"
-                          className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
-                          value={editForm?.costValues[cost.id] ?? 0} 
-                          onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
                         />
                         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
                       </div>

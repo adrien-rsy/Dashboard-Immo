@@ -11,9 +11,42 @@ import { MapPin, Calendar, Share2, Download } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 const INITIAL_SCENARIOS = [
-  { id: 'pessimistic', name: 'Pessimiste', icon: 'TrendingDown', isDefault: false, duration: 18, groupedSales: [] },
-  { id: 'realistic', name: 'Réaliste', icon: 'Zap', isDefault: true, duration: 14, groupedSales: [] },
-  { id: 'optimistic', name: 'Optimiste', icon: 'TrendingUp', isDefault: false, duration: 12, groupedSales: [] },
+  { 
+    id: 'pessimistic', 
+    name: 'Pessimiste', 
+    icon: 'TrendingDown', 
+    isDefault: false, 
+    duration: 18, 
+    groupedSales: [],
+    apport: 50000,
+    interestRate: 4.5,
+    agenceRate: 5,
+    isNotaireReduced: false
+  },
+  { 
+    id: 'realistic', 
+    name: 'Réaliste', 
+    icon: 'Zap', 
+    isDefault: true, 
+    duration: 14, 
+    groupedSales: [],
+    apport: 80000,
+    interestRate: 4.0,
+    agenceRate: 5,
+    isNotaireReduced: false
+  },
+  { 
+    id: 'optimistic', 
+    name: 'Optimiste', 
+    icon: 'TrendingUp', 
+    isDefault: false, 
+    duration: 12, 
+    groupedSales: [],
+    apport: 100000,
+    interestRate: 3.8,
+    agenceRate: 4,
+    isNotaireReduced: true
+  },
 ];
 
 const INITIAL_LOTS = [
@@ -23,83 +56,93 @@ const INITIAL_LOTS = [
 
 const INITIAL_COSTS = [
   { id: 'acq', label: "Prix d'acquisition net vendeur", category: "Achat", isGlobal: true, type: 'acquisition', values: { pessimistic: 320000, realistic: 320000, optimistic: 320000 } },
-  { id: 'notaire', label: "Frais de notaire", category: "Achat", isGlobal: true, type: 'notaire', isReduced: false, values: { pessimistic: 25600, realistic: 25600, optimistic: 25600 } },
-  { id: 'agence', label: "Frais d'agence", category: "Achat", isGlobal: true, type: 'agence', percentage: 5, values: { pessimistic: 16000, realistic: 16000, optimistic: 16000 } },
-  { id: 'travaux', label: "Travaux", category: "Travaux", isGlobal: true, values: { pessimistic: 160000, realistic: 140000, optimistic: 130000 } },
-  { id: 'finance', label: "Frais financiers", category: "Finance", isGlobal: true, values: { pessimistic: 20000, realistic: 15000, optimistic: 12000 } },
+  { id: 'notaire', label: "Frais de notaire", category: "Achat", isGlobal: true, type: 'notaire', values: {} },
+  { id: 'agence', label: "Frais d'agence", category: "Achat", isGlobal: true, type: 'agence', values: {} },
+  { id: 'travaux', label: "Travaux", category: "Travaux", isGlobal: true, type: 'travaux', values: { pessimistic: 160000, realistic: 140000, optimistic: 130000 } },
+  { id: 'finance', label: "Frais financiers", category: "Finance", isGlobal: true, type: 'finance', values: {} },
 ];
 
 const Index = () => {
   const [scenarios, setScenarios] = useState(() => {
-    const saved = localStorage.getItem('immo_scenarios_v7');
+    const saved = localStorage.getItem('immo_scenarios_v8');
     return saved ? JSON.parse(saved) : INITIAL_SCENARIOS;
   });
 
   const [lots, setLots] = useState(() => {
-    const saved = localStorage.getItem('immo_lots_v7');
+    const saved = localStorage.getItem('immo_lots_v8');
     return saved ? JSON.parse(saved) : INITIAL_LOTS;
   });
 
   const [costs, setCosts] = useState(() => {
-    const saved = localStorage.getItem('immo_costs_v7');
+    const saved = localStorage.getItem('immo_costs_v8');
     return saved ? JSON.parse(saved) : INITIAL_COSTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('immo_scenarios_v7', JSON.stringify(scenarios));
-    localStorage.setItem('immo_lots_v7', JSON.stringify(lots));
-    localStorage.setItem('immo_costs_v7', JSON.stringify(costs));
+    localStorage.setItem('immo_scenarios_v8', JSON.stringify(scenarios));
+    localStorage.setItem('immo_lots_v8', JSON.stringify(lots));
+    localStorage.setItem('immo_costs_v8', JSON.stringify(costs));
   }, [scenarios, lots, costs]);
 
   const defaultScenario = useMemo(() => scenarios.find(s => s.isDefault) || scenarios[0], [scenarios]);
 
-  // Logic to sync Notaire and Agence costs when Acquisition changes
-  const syncCalculatedCosts = (updatedCosts: any[]) => {
-    const acqCost = updatedCosts.find(c => c.type === 'acquisition');
-    if (!acqCost) return updatedCosts;
-
-    return updatedCosts.map(cost => {
-      if (cost.type === 'notaire') {
-        const rate = cost.isReduced ? 0.03 : 0.08;
-        const newValues = { ...cost.values };
-        Object.keys(acqCost.values).forEach(sid => {
-          newValues[sid] = Math.round(acqCost.values[sid] * rate);
-        });
-        return { ...cost, values: newValues };
-      }
-      if (cost.type === 'agence') {
-        const rate = (cost.percentage || 5) / 100;
-        const newValues = { ...cost.values };
-        Object.keys(acqCost.values).forEach(sid => {
-          newValues[sid] = Math.round(acqCost.values[sid] * rate);
-        });
-        return { ...cost, values: newValues };
-      }
-      return cost;
-    });
-  };
-
   const calculateTotals = (scenarioId: string) => {
     const scenario = scenarios.find(s => s.id === scenarioId);
-    const groupedLotIds = new Set(scenario?.groupedSales?.flatMap(g => g.lotIds) || []);
+    if (!scenario) return { caTotal: 0, costTotal: 0, margin: 0, profitability: 0, financeDetails: {} };
+
+    // 1. CA Total
+    const groupedLotIds = new Set(scenario.groupedSales?.flatMap(g => g.lotIds) || []);
     const individualCa = lots.filter(lot => !groupedLotIds.has(lot.id)).reduce((acc, lot) => acc + (lot.prices[scenarioId] || 0), 0);
-    const groupedCa = scenario?.groupedSales?.reduce((acc, g) => acc + (Number(g.price) || 0), 0) || 0;
+    const groupedCa = scenario.groupedSales?.reduce((acc, g) => acc + (Number(g.price) || 0), 0) || 0;
     const caTotal = individualCa + groupedCa;
-    const relevantCosts = costs.filter(c => c.isGlobal || c.targetScenarioId === scenarioId);
-    const costTotal = relevantCosts.reduce((acc, cost) => acc + (cost.values[scenarioId] || 0), 0);
+
+    // 2. Coûts de base (Acquisition, Travaux, Divers)
+    const acqPrice = costs.find(c => c.type === 'acquisition')?.values[scenarioId] || 0;
+    const travauxPrice = costs.find(c => c.type === 'travaux')?.values[scenarioId] || 0;
+    const otherCosts = costs.filter(c => !['acquisition', 'notaire', 'agence', 'finance', 'travaux'].includes(c.type))
+                            .reduce((acc, c) => acc + (c.values[scenarioId] || 0), 0);
+
+    // 3. Coûts calculés (Notaire, Agence)
+    const notairePrice = Math.round(acqPrice * (scenario.isNotaireReduced ? 0.03 : 0.08));
+    const agencePrice = Math.round(acqPrice * (scenario.agenceRate / 100));
+
+    // 4. Frais Financiers
+    const totalCostsExclFinance = acqPrice + travauxPrice + otherCosts + notairePrice + agencePrice;
+    const totalFinanced = Math.max(0, totalCostsExclFinance - scenario.apport);
+    const financialFees = Math.round(totalFinanced * scenario.duration * (scenario.interestRate / 100 / 12));
+
+    const costTotal = totalCostsExclFinance + financialFees;
     const margin = caTotal - costTotal;
     const profitability = costTotal > 0 ? (margin / costTotal) * 100 : 0;
-    return { caTotal, costTotal, margin, profitability };
+
+    return { 
+      caTotal, 
+      costTotal, 
+      margin, 
+      profitability,
+      calculatedCosts: {
+        notaire: notairePrice,
+        agence: agencePrice,
+        finance: financialFees,
+        totalFinanced
+      }
+    };
   };
 
   const totals = useMemo(() => calculateTotals(defaultScenario.id), [defaultScenario, lots, costs, scenarios]);
 
+  // Inject calculated values into costs for display in CostBreakdown
+  const displayCosts = useMemo(() => {
+    return costs.map(cost => {
+      if (cost.type === 'notaire') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.notaire } };
+      if (cost.type === 'agence') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.agence } };
+      if (cost.type === 'finance') return { ...cost, values: { [defaultScenario.id]: totals.calculatedCosts.finance } };
+      return cost;
+    });
+  }, [costs, totals, defaultScenario.id]);
+
   const handleUpdateCost = (updatedCost: any) => {
-    let newCosts = costs.map(c => c.id === updatedCost.id ? updatedCost : c);
-    if (updatedCost.type === 'acquisition' || updatedCost.type === 'notaire' || updatedCost.type === 'agence') {
-      newCosts = syncCalculatedCosts(newCosts);
-    }
-    setCosts(newCosts);
+    setCosts(costs.map(c => c.id === updatedCost.id ? updatedCost : c));
     showSuccess("Coût mis à jour");
   };
 
@@ -115,18 +158,13 @@ const Index = () => {
         : scenarios.reduce((acc, s) => ({ ...acc, [s.id]: Number(newCostData.value) }), {})
     };
     setCosts([...costs, newCost]);
-    showSuccess(scenarioId ? "Coût spécifique ajouté" : "Poste de coût global ajouté");
+    showSuccess("Poste de coût ajouté");
   };
 
   const handleDeleteScenario = (id: string) => {
-    if (scenarios.length <= 1) {
-      showError("Impossible de supprimer le dernier scénario");
-      return;
-    }
+    if (scenarios.length <= 1) return;
     const newScenarios = scenarios.filter(s => s.id !== id);
-    if (defaultScenario.id === id) {
-      newScenarios[0].isDefault = true;
-    }
+    if (defaultScenario.id === id) newScenarios[0].isDefault = true;
     setScenarios(newScenarios);
     showSuccess("Scénario supprimé");
   };
@@ -146,13 +184,10 @@ const Index = () => {
     }
 
     if (updatedData.costValues) {
-      let newCosts = costs.map(cost => ({
+      setCosts(costs.map(cost => ({
         ...cost,
         values: { ...cost.values, [scenarioId]: updatedData.costValues[cost.id] }
-      }));
-      // If acquisition changed in this scenario, sync calculated costs
-      newCosts = syncCalculatedCosts(newCosts);
-      setCosts(newCosts);
+      })));
     }
     showSuccess("Scénario mis à jour");
   };
@@ -217,7 +252,18 @@ const Index = () => {
                 onSetDefault={(id) => setScenarios(scenarios.map(s => ({ ...s, isDefault: s.id === id })))}
                 onAddScenario={() => {
                   const id = `scenario_${Date.now()}`;
-                  setScenarios([...scenarios, { id, name: 'Nouveau Scénario', icon: 'Zap', isDefault: false, duration: 12, groupedSales: [] }]);
+                  setScenarios([...scenarios, { 
+                    id, 
+                    name: 'Nouveau Scénario', 
+                    icon: 'Zap', 
+                    isDefault: false, 
+                    duration: 12, 
+                    groupedSales: [],
+                    apport: 50000,
+                    interestRate: 4.0,
+                    agenceRate: 5,
+                    isNotaireReduced: false
+                  }]);
                   setLots(lots.map(l => ({ ...l, prices: { ...l.prices, [id]: l.prices[defaultScenario.id] } })));
                   setCosts(costs.map(c => ({ ...c, values: { ...c.values, [id]: c.values[defaultScenario.id] } })));
                 }}
@@ -227,11 +273,13 @@ const Index = () => {
             </div>
             <div className="xl:col-span-1">
               <CostBreakdown 
-                costs={costs} 
-                scenarioId={defaultScenario.id} 
+                costs={displayCosts} 
+                scenario={defaultScenario} 
                 onAdd={handleAddCost}
                 onUpdate={handleUpdateCost}
+                onUpdateScenario={(data) => handleUpdateScenario(defaultScenario.id, { metadata: data })}
                 onDelete={(id) => setCosts(costs.filter(c => c.id !== id))}
+                financeDetails={totals.calculatedCosts}
               />
             </div>
           </div>
