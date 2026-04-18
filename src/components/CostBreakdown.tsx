@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { PieChart, Plus, Trash2, MoreVertical, Calculator, Wallet, Percent, Calendar, Settings2 } from 'lucide-react';
+import { PieChart, Plus, Trash2, Calculator, Wallet, Percent, Calendar, Settings2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -13,12 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
@@ -53,6 +47,13 @@ const CostBreakdown = ({ costs, scenario, onAdd, onUpdate, onDelete, onUpdateSce
       onUpdate(editingCost);
     }
     setEditingCost(null);
+  };
+
+  const handleDelete = () => {
+    if (editingCost) {
+      onDelete(editingCost.id);
+      setEditingCost(null);
+    }
   };
 
   return (
@@ -96,11 +97,11 @@ const CostBreakdown = ({ costs, scenario, onAdd, onUpdate, onDelete, onUpdateSce
         </Dialog>
       </div>
 
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-2">
         {costs.map((cost) => (
           <div 
             key={cost.id} 
-            className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded-xl transition-all"
+            className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-3 rounded-2xl transition-all"
             onClick={() => {
               if (cost.type === 'finance') {
                 setEditingCost({ ...cost, apport: scenario.apport, interestRate: scenario.interestRate, duration: scenario.duration });
@@ -119,30 +120,15 @@ const CostBreakdown = ({ costs, scenario, onAdd, onUpdate, onDelete, onUpdateSce
                 cost.isGlobal ? "bg-gray-200 group-hover:bg-black" : "bg-blue-400"
               )} />
               <div className="flex flex-col">
-                <span className="text-sm text-gray-600 group-hover:text-black transition-colors">{cost.label}</span>
-                {cost.type === 'notaire' && <span className="text-[8px] text-gray-400 font-bold uppercase">{scenario.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
-                {cost.type === 'agence' && <span className="text-[8px] text-gray-400 font-bold uppercase">Taux : {scenario.agenceRate}%</span>}
-                {cost.type === 'finance' && <span className="text-[8px] text-gray-400 font-bold uppercase">{scenario.interestRate}% sur {scenario.duration} mois</span>}
+                <span className="text-sm font-semibold text-gray-700 group-hover:text-black transition-colors">{cost.label}</span>
+                <div className="flex items-center gap-2">
+                  {cost.type === 'notaire' && <span className="text-[9px] text-gray-400 font-bold uppercase">{scenario.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
+                  {cost.type === 'agence' && <span className="text-[9px] text-gray-400 font-bold uppercase">Taux : {scenario.agenceRate}%</span>}
+                  {cost.type === 'finance' && <span className="text-[9px] text-gray-400 font-bold uppercase">{scenario.interestRate}% sur {scenario.duration} mois</span>}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenario.id] || 0)}</span>
-              {!['notaire', 'agence', 'finance', 'acquisition'].includes(cost.type) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-100 rounded-lg transition-all">
-                      <MoreVertical className="w-3.5 h-3.5 text-gray-400" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl">
-                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => onDelete(cost.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+            <span className="text-sm font-bold text-gray-900">{formatEuro(cost.values[scenario.id] || 0)}</span>
           </div>
         ))}
       </div>
@@ -219,8 +205,18 @@ const CostBreakdown = ({ costs, scenario, onAdd, onUpdate, onDelete, onUpdateSce
               </div>
             )}
 
-            <DialogFooter>
-              <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Enregistrer les paramètres</button>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              {!['notaire', 'agence', 'finance', 'acquisition'].includes(editingCost?.type) && (
+                <button 
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex items-center justify-center gap-2 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer ce poste
+                </button>
+              )}
+              <button type="submit" className="flex-1 py-3 bg-black text-white rounded-xl font-bold">Enregistrer les paramètres</button>
             </DialogFooter>
           </form>
         </DialogContent>

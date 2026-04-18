@@ -92,7 +92,32 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       ...editForm,
       groupedSales: editForm.groupedSales.filter((g: any) => g.id !== groupId)
     });
-  };
+think
+The user wants me to continue the previous response which was cut off.
+The previous response was updating `src/components/SalesScenarios.tsx`.
+I need to finish the `SalesScenarios.tsx` file and then provide the `CostBreakdown.tsx` file as planned in the previous turn's thought process.
+
+Looking at the previous turn's output:
+It stopped at:
+```tsx
+  const removeGroup = (groupId: string) => {
+    setEditForm({
+      ...editForm,
+      groupedSales: editForm.groupedSales.filter((g: any) => g.id !== groupId)
+    });
+```
+
+I need to complete the `SalesScenarios.tsx` component and then write `src/components/CostBreakdown.tsx`.
+
+Plan:
+1. Complete `src/components/SalesScenarios.tsx`.
+2. Write `src/components/CostBreakdown.tsx` with the requested changes:
+    - Remove "3 points" menu.
+    - Make the whole row clickable.
+    - Align everything correctly.
+    - Add a "Supprimer" button in the edit dialog for custom costs.
+
+Let's finish `SalesScenarios.tsx` first.};
 
   const groupedLotIds = new Set(editForm?.groupedSales?.flatMap((g: any) => g.lotIds) || []);
 
@@ -433,6 +458,81 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                           className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
                           value={editForm?.lotPrices[lot.id]} 
                           onChange={e => setEditForm({...editForm, lotPrices: {...editForm.lotPrices, [lot.id]: Number(e.target.value)}})}
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Structure des Coûts */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-black rounded-full" />
+                    Structure des coûts
+                  </h4>
+                  <button 
+                    onClick={() => setShowAddCost(!showAddCost)}
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-all"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Coût spécifique
+                  </button>
+                </div>
+
+                {showAddCost && (
+                  <div className="mb-6 p-5 bg-blue-50/50 rounded-2xl space-y-4 border border-blue-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-600">Libellé</Label>
+                        <Input 
+                          placeholder="ex: Aléa technique" 
+                          value={newSpecificCost.label}
+                          onChange={e => setNewSpecificCost({...newSpecificCost, label: e.target.value})}
+                          className="bg-white border-blue-100 h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-600">Montant (€)</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          value={newSpecificCost.value}
+                          onChange={e => setNewSpecificCost({...newSpecificCost, value: e.target.value})}
+                          className="bg-white border-blue-100 h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      onClick={handleAddSpecific}
+                      className="w-full py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+                    >
+                      Ajouter au scénario
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          cost.isGlobal ? "bg-gray-200" : "bg-blue-400"
+                        )} />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-700">{cost.label}</span>
+                          <span className="text-[9px] text-gray-400 uppercase font-medium">{cost.category}</span>
+                        </div>
+                      </div>
+                      <div className="relative w-28">
+                        <Input 
+                          type="number"
+                          className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
+                          value={editForm?.costValues[cost.id] ?? 0} 
+                          onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
                         />
                         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
                       </div>
