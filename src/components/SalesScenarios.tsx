@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Building, Settings2 } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -273,7 +273,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     </div>
                   </div>
 
-                  {/* Groupes de Vente */}
+                  {/* Groupes de Vente - Conditionnel */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
@@ -329,53 +329,55 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       </div>
                     )}
 
-                    <div className="space-y-2">
-                      {editForm.groupedSales?.map((group: any, index: number) => {
-                        const groupColor = GROUP_COLORS[index] || GROUP_COLORS[0];
-                        return (
-                          <div 
-                            key={group.id} 
-                            className="flex items-center justify-between gap-4 p-4 bg-white border rounded-2xl"
-                            style={{ borderColor: `${groupColor}20`, backgroundColor: `${groupColor}05` }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div 
-                                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                style={{ backgroundColor: `${groupColor}20` }}
-                              >
-                                <Layers className="w-4 h-4" style={{ color: groupColor }} />
+                    {editForm.groupedSales?.length > 0 && (
+                      <div className="space-y-2">
+                        {editForm.groupedSales.map((group: any, index: number) => {
+                          const groupColor = GROUP_COLORS[index] || GROUP_COLORS[0];
+                          return (
+                            <div 
+                              key={group.id} 
+                              className="flex items-center justify-between gap-4 p-4 bg-white border rounded-2xl"
+                              style={{ borderColor: `${groupColor}20`, backgroundColor: `${groupColor}05` }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                                  style={{ backgroundColor: `${groupColor}20` }}
+                                >
+                                  <Layers className="w-4 h-4" style={{ color: groupColor }} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold" style={{ color: groupColor }}>
+                                    Groupe : {group.lotIds.map(id => lots.find(l => l.id === id)?.name).join(', ')}
+                                  </span>
+                                  <span className="text-[9px] uppercase font-bold opacity-60" style={{ color: groupColor }}>Vente groupée</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold" style={{ color: groupColor }}>
-                                  Groupe : {group.lotIds.map(id => lots.find(l => l.id === id)?.name).join(', ')}
-                                </span>
-                                <span className="text-[9px] uppercase font-bold opacity-60" style={{ color: groupColor }}>Vente groupée</span>
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-28">
+                                  <Input 
+                                    type="number"
+                                    className="pr-7 h-9 text-sm font-bold rounded-lg bg-white"
+                                    style={{ borderColor: `${groupColor}40` }}
+                                    value={group.price} 
+                                    onChange={e => {
+                                      const updatedGroups = editForm.groupedSales.map((g: any) => 
+                                        g.id === group.id ? { ...g, price: Number(e.target.value) } : g
+                                      );
+                                      setEditForm({ ...editForm, groupedSales: updatedGroups });
+                                    }}
+                                  />
+                                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-60" style={{ color: groupColor }}>€</span>
+                                </div>
+                                <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-28">
-                                <Input 
-                                  type="number"
-                                  className="pr-7 h-9 text-sm font-bold rounded-lg bg-white"
-                                  style={{ borderColor: `${groupColor}40` }}
-                                  value={group.price} 
-                                  onChange={e => {
-                                    const updatedGroups = editForm.groupedSales.map((g: any) => 
-                                      g.id === group.id ? { ...g, price: Number(e.target.value) } : g
-                                    );
-                                    setEditForm({ ...editForm, groupedSales: updatedGroups });
-                                  }}
-                                />
-                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-60" style={{ color: groupColor }}>€</span>
-                              </div>
-                              <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Prix des Lots Individuels */}
@@ -568,8 +570,24 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
               </div>
             )}
 
-            <DialogFooter>
-              <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Mettre à jour</button>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              {!['notaire', 'agence', 'finance', 'acquisition'].includes(innerEditingCost?.type) && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setEditForm({
+                      ...editForm,
+                      costValues: Object.fromEntries(Object.entries(editForm.costValues).filter(([id]) => id !== innerEditingCost.id))
+                    });
+                    setInnerEditingCost(null);
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer
+                </button>
+              )}
+              <button type="submit" className="flex-1 py-3 bg-black text-white rounded-xl font-bold">Mettre à jour</button>
             </DialogFooter>
           </form>
         </DialogContent>
