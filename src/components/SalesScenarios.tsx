@@ -25,7 +25,7 @@ const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'cur
 
 const GROUP_COLORS = ['#417078', '#c09068'];
 
-const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddScenario, onAddSpecificCost, calculateTotals }: any) => {
+const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, onSetDefault, onAddScenario, onAddSpecificCost, calculateTotals }: any) => {
   const [editingScenario, setEditingScenario] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [showAddCost, setShowAddCost] = useState(false);
@@ -150,6 +150,13 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                       >
                         <Check className="w-4 h-4 mr-2" />
                         Définir par défaut
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600 cursor-pointer"
+                        onClick={() => onDeleteScenario(s.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Supprimer
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
