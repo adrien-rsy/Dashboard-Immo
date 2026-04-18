@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Building } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Building, Settings2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -33,6 +33,9 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '' });
   const [newGroup, setNewGroup] = useState({ lotIds: [] as number[], price: '' });
+  
+  // State for deep editing a cost within the scenario dialog
+  const [innerEditingCost, setInnerEditingCost] = useState<any>(null);
 
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
@@ -95,6 +98,37 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
   };
 
   const groupedLotIds = new Set(editForm?.groupedSales?.flatMap((g: any) => g.lotIds) || []);
+
+  // Helper to handle inner cost updates
+  const handleInnerCostUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (innerEditingCost.type === 'finance') {
+      setEditForm({
+        ...editForm,
+        metadata: { 
+          ...editForm.metadata, 
+          apport: innerEditingCost.apport, 
+          interestRate: innerEditingCost.interestRate 
+        }
+      });
+    } else if (innerEditingCost.type === 'agence') {
+      setEditForm({
+        ...editForm,
+        metadata: { ...editForm.metadata, agenceRate: innerEditingCost.agenceRate }
+      });
+    } else if (innerEditingCost.type === 'notaire') {
+      setEditForm({
+        ...editForm,
+        metadata: { ...editForm.metadata, isNotaireReduced: innerEditingCost.isNotaireReduced }
+      });
+    } else {
+      setEditForm({
+        ...editForm,
+        costValues: { ...editForm.costValues, [innerEditingCost.id]: innerEditingCost.currentValue }
+      });
+    }
+    setInnerEditingCost(null);
+  };
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] shadow-sm h-full">
@@ -233,79 +267,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     value={editForm?.metadata.duration} 
                     onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, duration: Number(e.target.value)}})}
                   />
-                </div>
-              </div>
-
-              {/* Acquisition & Frais */}
-              <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                <h4 className="text-sm font-black uppercase tracking-widest text-black mb-6 flex items-center gap-2">
-                  <Building className="w-4 h-4" />
-                  Acquisition & Frais
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-gray-400">Prix net vendeur (€)</Label>
-                    <Input 
-                      type="number"
-                      className="rounded-xl bg-white"
-                      value={editForm?.costValues['acq'] || 0}
-                      onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, acq: Number(e.target.value)}})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-gray-400">Taux d'agence (%)</Label>
-                    <div className="relative">
-                      <Input 
-                        type="number"
-                        className="rounded-xl bg-white pr-8"
-                        value={editForm?.metadata.agenceRate}
-                        onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, agenceRate: Number(e.target.value)}})}
-                      />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 col-span-full">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs font-bold">Frais de notaire réduits</Label>
-                      <p className="text-[10px] text-gray-500">Appliquer 3% au lieu de 8%</p>
-                    </div>
-                    <Switch 
-                      checked={editForm?.metadata.isNotaireReduced}
-                      onCheckedChange={checked => setEditForm({...editForm, metadata: {...editForm.metadata, isNotaireReduced: checked}})}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Financement */}
-              <div className="p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
-                <h4 className="text-sm font-black uppercase tracking-widest text-blue-600 mb-6 flex items-center gap-2">
-                  <Wallet className="w-4 h-4" />
-                  Financement
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-blue-400">Apport personnel (€)</Label>
-                    <Input 
-                      type="number"
-                      className="rounded-xl bg-white"
-                      value={editForm?.metadata.apport}
-                      onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, apport: Number(e.target.value)}})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-blue-400">Taux annuel d'emprunt (%)</Label>
-                    <div className="relative">
-                      <Input 
-                        type="number"
-                        step="0.1"
-                        className="rounded-xl bg-white pr-8"
-                        value={editForm?.metadata.interestRate}
-                        onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, interestRate: Number(e.target.value)}})}
-                      />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -490,29 +451,56 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 )}
 
                 <div className="space-y-2">
-                  {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => (
-                    <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          cost.isGlobal ? "bg-gray-200" : "bg-blue-400"
-                        )} />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-700">{cost.label}</span>
-                          <span className="text-[9px] text-gray-400 uppercase font-medium">{cost.category}</span>
+                  {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => {
+                    // Calculate display value for calculated costs
+                    let displayValue = editForm?.costValues[cost.id] ?? 0;
+                    if (cost.type === 'notaire') displayValue = Math.round((editForm?.costValues['acq'] || 0) * (editForm?.metadata.isNotaireReduced ? 0.03 : 0.08));
+                    if (cost.type === 'agence') displayValue = Math.round((editForm?.costValues['acq'] || 0) * (editForm?.metadata.agenceRate / 100));
+                    if (cost.type === 'finance') {
+                      const acq = editForm?.costValues['acq'] || 0;
+                      const travaux = editForm?.costValues['travaux'] || 0;
+                      const others = Object.entries(editForm?.costValues || {}).filter(([id]) => !['acq', 'travaux', 'notaire', 'agence', 'finance'].includes(id)).reduce((acc, [_, v]) => acc + (v as number), 0);
+                      const notaire = Math.round(acq * (editForm?.metadata.isNotaireReduced ? 0.03 : 0.08));
+                      const agence = Math.round(acq * (editForm?.metadata.agenceRate / 100));
+                      const totalExclFinance = acq + travaux + others + notaire + agence;
+                      const financed = Math.max(0, totalExclFinance - editForm?.metadata.apport);
+                      displayValue = Math.round(financed * editForm?.metadata.duration * (editForm?.metadata.interestRate / 100 / 12));
+                    }
+
+                    return (
+                      <div 
+                        key={cost.id} 
+                        className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all cursor-pointer group"
+                        onClick={() => {
+                          if (cost.type === 'finance') {
+                            setInnerEditingCost({ ...cost, apport: editForm.metadata.apport, interestRate: editForm.metadata.interestRate, duration: editForm.metadata.duration });
+                          } else if (cost.type === 'agence') {
+                            setInnerEditingCost({ ...cost, agenceRate: editForm.metadata.agenceRate });
+                          } else if (cost.type === 'notaire') {
+                            setInnerEditingCost({ ...cost, isNotaireReduced: editForm.metadata.isNotaireReduced });
+                          } else {
+                            setInnerEditingCost({ ...cost, currentValue: editForm.costValues[cost.id] || 0 });
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            cost.isGlobal ? "bg-gray-200" : "bg-blue-400"
+                          )} />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-700 group-hover:text-black transition-colors">{cost.label}</span>
+                            <div className="flex items-center gap-2">
+                              {cost.type === 'notaire' && <span className="text-[8px] text-gray-400 font-bold uppercase">{editForm.metadata.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
+                              {cost.type === 'agence' && <span className="text-[8px] text-gray-400 font-bold uppercase">Taux : {editForm.metadata.agenceRate}%</span>}
+                              {cost.type === 'finance' && <span className="text-[8px] text-gray-400 font-bold uppercase">{editForm.metadata.interestRate}% sur {editForm.metadata.duration} mois</span>}
+                            </div>
+                          </div>
                         </div>
+                        <span className="text-sm font-bold text-gray-900">{formatEuro(displayValue)}</span>
                       </div>
-                      <div className="relative w-28">
-                        <Input 
-                          type="number"
-                          className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
-                          value={editForm?.costValues[cost.id] ?? 0} 
-                          onChange={e => setEditForm({...editForm, costValues: {...editForm.costValues, [cost.id]: Number(e.target.value)}})}
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -526,6 +514,56 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
               Valider les hypothèses
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Inner Cost Edit Dialog (Sub-dialog) */}
+      <Dialog open={!!innerEditingCost} onOpenChange={(open) => !open && setInnerEditingCost(null)}>
+        <DialogContent className="sm:max-w-[425px] rounded-[2rem] z-[100]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {innerEditingCost?.type === 'finance' ? <Calculator className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
+              {innerEditingCost?.label}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-4">
+            {innerEditingCost?.type === 'finance' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
+                  <Input type="number" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({...innerEditingCost, apport: Number(e.target.value)})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
+                  <Input type="number" step="0.1" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({...innerEditingCost, interestRate: Number(e.target.value)})} />
+                </div>
+              </div>
+            ) : innerEditingCost?.type === 'agence' ? (
+              <div className="space-y-4">
+                <Label>Taux d'agence (%)</Label>
+                <Input type="number" value={innerEditingCost.agenceRate} onChange={e => setInnerEditingCost({...innerEditingCost, agenceRate: Number(e.target.value)})} />
+              </div>
+            ) : innerEditingCost?.type === 'notaire' ? (
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                <div className="space-y-0.5">
+                  <Label>Frais réduits</Label>
+                  <p className="text-[10px] text-gray-500">Appliquer 3% au lieu de 8%</p>
+                </div>
+                <Switch checked={innerEditingCost.isNotaireReduced} onCheckedChange={checked => setInnerEditingCost({...innerEditingCost, isNotaireReduced: checked})} />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Montant (€)</Label>
+                  <Input type="number" value={innerEditingCost?.currentValue || 0} onChange={e => setInnerEditingCost({...innerEditingCost, currentValue: Number(e.target.value)})} />
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold">Mettre à jour</button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
