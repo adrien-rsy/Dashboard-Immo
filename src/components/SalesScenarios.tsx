@@ -21,6 +21,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
@@ -50,6 +51,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     setEditForm({
       metadata: { 
         name: scenario.name, 
+        description: scenario.description || '',
         duration: scenario.duration,
         apport: scenario.apport || 0,
         interestRate: scenario.interestRate || 0,
@@ -277,7 +279,17 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   </div>
                   <DialogTitle className="text-2xl font-black">Configuration du scénario</DialogTitle>
                 </div>
-                <p className="text-sm text-gray-500">Ajustez les prix de revente, les coûts et les paramètres financiers.</p>
+                <Textarea 
+                  placeholder="décrivez le scénario en quelques mots"
+                  className="text-sm text-gray-500 bg-transparent border-none p-0 focus-visible:ring-0 resize-none min-h-[20px] h-auto overflow-hidden"
+                  value={editForm.metadata.description}
+                  onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, description: e.target.value}})}
+                  rows={1}
+                  onInput={(e: any) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                />
               </DialogHeader>
               
               <ScrollArea className="flex-1 min-h-0">

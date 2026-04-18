@@ -14,6 +14,7 @@ const INITIAL_SCENARIOS = [
   { 
     id: 'pessimistic', 
     name: 'Pessimiste', 
+    description: 'Hypothèse prudente avec des prix de revente bas et des délais de portage longs.',
     icon: 'TrendingDown', 
     isDefault: false, 
     duration: 18, 
@@ -26,6 +27,7 @@ const INITIAL_SCENARIOS = [
   { 
     id: 'realistic', 
     name: 'Réaliste', 
+    description: 'Scénario basé sur les prix du marché actuel et des délais de réalisation standards.',
     icon: 'Zap', 
     isDefault: true, 
     duration: 14, 
@@ -38,6 +40,7 @@ const INITIAL_SCENARIOS = [
   { 
     id: 'optimistic', 
     name: 'Optimiste', 
+    description: 'Scénario avec une revente rapide au prix fort et des coûts de travaux optimisés.',
     icon: 'TrendingUp', 
     isDefault: false, 
     duration: 12, 
@@ -261,6 +264,7 @@ const Index = () => {
                   setScenarios([...scenarios, { 
                     id, 
                     name: 'Nouveau Scénario', 
+                    description: '',
                     icon: 'Zap', 
                     isDefault: false, 
                     duration: 12, 
