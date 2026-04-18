@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -153,6 +153,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     const agence = Math.round(acq * ((editForm.metadata?.agenceRate || 0) / 100));
     const totalExclFinance = acq + travaux + others + notaire + agence;
     return Math.max(0, totalExclFinance - (innerEditingCost.apport || 0));
+  };
+
+  const calculateLiveFees = () => {
+    const financed = calculateLiveFinanced();
+    if (!innerEditingCost) return 0;
+    return Math.round(financed * (innerEditingCost.duration || 0) * ((innerEditingCost.interestRate || 0) / 100 / 12));
   };
 
   return (
@@ -554,14 +560,21 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-4">
             {innerEditingCost?.type === 'finance' ? (
               <div className="space-y-6">
-                <div className="p-4 bg-black text-white rounded-2xl flex items-center justify-between shadow-xl shadow-black/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                      <Banknote className="w-4 h-4 text-white" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 bg-black text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-black/10">
+                    <div className="flex items-center gap-2 opacity-60">
+                      <Banknote className="w-3 h-3" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest">Financé</span>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Total financé</span>
+                    <span className="text-sm font-black">{formatEuro(calculateLiveFinanced())}</span>
                   </div>
-                  <span className="text-lg font-black">{formatEuro(calculateLiveFinanced())}</span>
+                  <div className="p-4 bg-blue-600 text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-blue-900/20">
+                    <div className="flex items-center gap-2 opacity-60">
+                      <Coins className="w-3 h-3" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest">Intérêts</span>
+                    </div>
+                    <span className="text-sm font-black">{formatEuro(calculateLiveFees())}</span>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
