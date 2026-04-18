@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -74,10 +74,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     const id = Date.now().toString();
     const val = Number(newSpecificCost.value);
     
-    // Ajouter au parent
     onAddSpecificCost({ ...newSpecificCost, id }, editingScenario.id);
     
-    // Mettre à jour le formulaire local immédiatement
     setEditForm({
       ...editForm,
       costValues: { ...editForm.costValues, [id]: val }
@@ -142,6 +140,19 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       });
     }
     setInnerEditingCost(null);
+  };
+
+  const calculateLiveFinanced = () => {
+    if (!editForm || !innerEditingCost) return 0;
+    const acq = editForm.costValues['acq'] || 0;
+    const travaux = editForm.costValues['travaux'] || 0;
+    const others = Object.entries(editForm.costValues || {})
+      .filter(([id]) => !['acq', 'travaux', 'notaire', 'agence', 'finance'].includes(id))
+      .reduce((acc, [_, v]) => acc + (v as number), 0);
+    const notaire = Math.round(acq * (editForm.metadata?.isNotaireReduced ? 0.03 : 0.08));
+    const agence = Math.round(acq * ((editForm.metadata?.agenceRate || 0) / 100));
+    const totalExclFinance = acq + travaux + others + notaire + agence;
+    return Math.max(0, totalExclFinance - (innerEditingCost.apport || 0));
   };
 
   return (
@@ -542,18 +553,30 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           </DialogHeader>
           <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-4">
             {innerEditingCost?.type === 'finance' ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
-                  <Input type="number" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({...innerEditingCost, duration: Number(e.target.value)})} />
+              <div className="space-y-6">
+                <div className="p-4 bg-black text-white rounded-2xl flex items-center justify-between shadow-xl shadow-black/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                      <Banknote className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Total financé</span>
+                  </div>
+                  <span className="text-lg font-black">{formatEuro(calculateLiveFinanced())}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
-                  <Input type="number" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({...innerEditingCost, apport: Number(e.target.value)})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
-                  <Input type="number" step="0.1" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({...innerEditingCost, interestRate: Number(e.target.value)})} />
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
+                    <Input type="number" className="rounded-xl" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({...innerEditingCost, duration: Number(e.target.value)})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
+                    <Input type="number" className="rounded-xl border-black/20 focus:ring-black" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({...innerEditingCost, apport: Number(e.target.value)})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
+                    <Input type="number" step="0.1" className="rounded-xl" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({...innerEditingCost, interestRate: Number(e.target.value)})} />
+                  </div>
                 </div>
               </div>
             ) : innerEditingCost?.type === 'agence' ? (
