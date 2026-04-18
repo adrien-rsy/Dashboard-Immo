@@ -19,9 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/checkbox";
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+
+const GROUP_COLORS = ['#417078', '#c09068'];
 
 const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddScenario, onAddSpecificCost, calculateTotals }: any) => {
   const [editingScenario, setEditingScenario] = useState<any>(null);
@@ -223,12 +225,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
-                    <div className="w-1.5 h-4 bg-purple-500 rounded-full" />
+                    <div className="w-1.5 h-4 bg-black rounded-full" />
                     Groupes de vente
                   </h4>
                   <button 
                     onClick={() => setShowAddGroup(!showAddGroup)}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-600 hover:bg-purple-50 px-2 py-1 rounded-lg transition-all"
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase text-black hover:bg-gray-50 px-2 py-1 rounded-lg transition-all"
                   >
                     <Plus className="w-3 h-3" />
                     Vente groupée
@@ -236,12 +238,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                 </div>
 
                 {showAddGroup && (
-                  <div className="mb-6 p-5 bg-purple-50/50 rounded-2xl space-y-4 border border-purple-100 animate-in fade-in slide-in-from-top-2">
+                  <div className="mb-6 p-5 bg-gray-50/50 rounded-2xl space-y-4 border border-gray-100 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-purple-600">Sélectionner les lots à grouper</Label>
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Sélectionner les lots à grouper</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {lots.filter(l => !groupedLotIds.has(l.id)).map(lot => (
-                          <div key={lot.id} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-purple-100">
+                          <div key={lot.id} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-100">
                             <Checkbox 
                               id={`group-lot-${lot.id}`}
                               checked={newGroup.lotIds.includes(lot.id)}
@@ -256,19 +258,19 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-purple-600">Prix global du groupe (€)</Label>
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Prix global du groupe (€)</Label>
                       <Input 
                         type="number" 
                         placeholder="0" 
                         value={newGroup.price}
                         onChange={e => setNewGroup({...newGroup, price: e.target.value})}
-                        className="bg-white border-purple-100 h-9 text-sm"
+                        className="bg-white border-gray-100 h-9 text-sm"
                       />
                     </div>
                     <button 
                       onClick={handleCreateGroup}
                       disabled={newGroup.lotIds.length < 2 || !newGroup.price}
-                      className="w-full py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-all shadow-md shadow-purple-200 disabled:opacity-50"
+                      className="w-full py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-all shadow-md disabled:opacity-50"
                     >
                       Créer le groupe de vente
                     </button>
@@ -276,40 +278,51 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                 )}
 
                 <div className="space-y-2">
-                  {editForm?.groupedSales?.map((group: any) => (
-                    <div key={group.id} className="flex items-center justify-between gap-4 p-4 bg-purple-50/30 border border-purple-100 rounded-2xl">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <Layers className="w-4 h-4 text-purple-600" />
+                  {editForm?.groupedSales?.map((group: any, index: number) => {
+                    const groupColor = GROUP_COLORS[index] || GROUP_COLORS[0];
+                    return (
+                      <div 
+                        key={group.id} 
+                        className="flex items-center justify-between gap-4 p-4 bg-white border rounded-2xl"
+                        style={{ borderColor: `${groupColor}20`, backgroundColor: `${groupColor}05` }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: `${groupColor}20` }}
+                          >
+                            <Layers className="w-4 h-4" style={{ color: groupColor }} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold" style={{ color: groupColor }}>
+                              Groupe : {group.lotIds.map(id => lots.find(l => l.id === id)?.name).join(', ')}
+                            </span>
+                            <span className="text-[9px] uppercase font-bold opacity-60" style={{ color: groupColor }}>Vente groupée</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-purple-900">
-                            Groupe : {group.lotIds.map(id => lots.find(l => l.id === id)?.name).join(', ')}
-                          </span>
-                          <span className="text-[9px] text-purple-400 uppercase font-bold">Vente groupée</span>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-28">
+                            <Input 
+                              type="number"
+                              className="pr-7 h-9 text-sm font-bold rounded-lg bg-white"
+                              style={{ borderColor: `${groupColor}40` }}
+                              value={group.price} 
+                              onChange={e => {
+                                const updatedGroups = editForm.groupedSales.map((g: any) => 
+                                  g.id === group.id ? { ...g, price: Number(e.target.value) } : g
+                                );
+                                setEditForm({ ...editForm, groupedSales: updatedGroups });
+                              }}
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-60" style={{ color: groupColor }}>€</span>
+                          </div>
+                          <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-28">
-                          <Input 
-                            type="number"
-                            className="pr-7 h-9 text-sm font-bold rounded-lg border-purple-200 bg-white"
-                            value={group.price} 
-                            onChange={e => {
-                              const updatedGroups = editForm.groupedSales.map((g: any) => 
-                                g.id === group.id ? { ...g, price: Number(e.target.value) } : g
-                              );
-                              setEditForm({ ...editForm, groupedSales: updatedGroups });
-                            }}
-                          />
-                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-purple-400 font-bold">€</span>
-                        </div>
-                        <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

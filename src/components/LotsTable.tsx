@@ -22,6 +22,8 @@ import {
 
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
+const GROUP_COLORS = ['#417078', '#c09068'];
+
 const LotsTable = ({ lots, scenarios, activeScenarioId, onAdd, onUpdate, onDelete }: { lots: any[], scenarios: any[], activeScenarioId: string, onAdd: (lot: any) => void, onUpdate: (id: number, lot: any) => void, onDelete: (id: number) => void }) => {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [editingLot, setEditingLot] = React.useState<any>(null);
@@ -151,21 +153,28 @@ const LotsTable = ({ lots, scenarios, activeScenarioId, onAdd, onUpdate, onDelet
                   </div>
                 </td>
                 {scenarios.map(s => {
-                  const group = s.groupedSales?.find((g: any) => g.lotIds.includes(lot.id));
-                  const isGrouped = !!group;
+                  const groupIndex = s.groupedSales?.findIndex((g: any) => g.lotIds.includes(lot.id));
+                  const isGrouped = groupIndex !== -1;
+                  const group = isGrouped ? s.groupedSales[groupIndex] : null;
+                  const groupColor = isGrouped ? (GROUP_COLORS[groupIndex] || GROUP_COLORS[0]) : null;
                   
                   return (
                     <td key={s.id} className="px-8 py-5 text-center">
                       <div className="flex flex-col items-center gap-1">
-                        <span className={cn(
-                          "text-sm font-bold",
-                          s.id === activeScenarioId ? "text-black" : "text-gray-400",
-                          isGrouped && "text-purple-600"
-                        )}>
+                        <span 
+                          className={cn(
+                            "text-sm font-bold",
+                            s.id === activeScenarioId ? "text-black" : "text-gray-400"
+                          )}
+                          style={isGrouped ? { color: groupColor } : {}}
+                        >
                           {isGrouped ? formatEuro(group.price) : formatEuro(lot.prices[s.id] || 0)}
                         </span>
                         {isGrouped && (
-                          <span className="px-1.5 py-0.5 bg-purple-600 text-white text-[8px] font-black uppercase rounded shadow-sm">
+                          <span 
+                            className="px-1.5 py-0.5 text-white text-[8px] font-black uppercase rounded shadow-sm"
+                            style={{ backgroundColor: groupColor }}
+                          >
                             Groupé
                           </span>
                         )}
