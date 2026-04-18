@@ -8,11 +8,12 @@ interface KPIProps {
   label: string;
   value: string;
   subValue?: string;
+  subValueColor?: string;
   icon?: React.ElementType;
   variant?: 'dark' | 'white';
 }
 
-const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIProps) => (
+const KPICard = ({ label, value, subValue, subValueColor, icon: Icon, variant = 'white' }: KPIProps) => (
   <div className={cn(
     "p-6 rounded-[2rem] transition-all duration-300 hover:shadow-xl flex flex-col justify-between min-h-[160px]",
     variant === 'dark' ? "bg-[#1A1A1A] text-white shadow-2xl shadow-black/20" : "bg-white text-black shadow-sm"
@@ -26,7 +27,7 @@ const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIP
     <div>
       <h3 className="text-3xl font-bold mb-1">{value}</h3>
       {subValue && (
-        <p className={cn("text-xs font-medium", variant === 'dark' ? "text-green-400" : "text-gray-400")}>
+        <p className={cn("text-xs font-medium", subValueColor || (variant === 'dark' ? "text-green-400" : "text-gray-400"))}>
           {subValue}
         </p>
       )}
@@ -37,13 +38,18 @@ const KPICard = ({ label, value, subValue, icon: Icon, variant = 'white' }: KPIP
 const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
 const ProjectKPIs = ({ totals }: { totals: any }) => {
+  const isPositive = totals.profitability >= 0;
+  const profitLabel = `${isPositive ? '+' : ''}${totals.profitability.toFixed(1)}% sur coût total`;
+  const profitColor = isPositive ? "text-green-400" : "text-red-400";
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <KPICard 
         variant="dark"
         label="Marge Estimée" 
         value={formatEuro(totals.margin)} 
-        subValue={`+${totals.profitability.toFixed(1)}% sur coût total`}
+        subValue={profitLabel}
+        subValueColor={profitColor}
         icon={TrendingUp}
       />
       <KPICard 

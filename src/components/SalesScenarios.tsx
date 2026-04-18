@@ -78,6 +78,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
         {scenarios.map((s: any) => {
           const { caTotal, margin, profitability } = calculateTotals(s.id);
           const Icon = s.icon === 'TrendingDown' ? TrendingDown : s.icon === 'TrendingUp' ? TrendingUp : Zap;
+          const isPositive = profitability >= 0;
           
           return (
             <div 
@@ -135,11 +136,13 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onSetDefault, onAddS
                   <span className="text-sm font-bold text-gray-900">{formatEuro(margin)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-medium">Rentabilité</span>
+                  <span className="text-xs text-gray-400 font-medium">Marge brute (%)</span>
                   <span className={cn(
                     "text-sm font-bold",
-                    profitability > 15 ? "text-green-500" : profitability > 10 ? "text-blue-500" : "text-red-500"
-                  )}>{profitability.toFixed(1)}%</span>
+                    isPositive ? "text-green-500" : "text-red-500"
+                  )}>
+                    {isPositive ? '+' : ''}{profitability.toFixed(1)}%
+                  </span>
                 </div>
               </div>
               
