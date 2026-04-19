@@ -202,6 +202,12 @@ const Index = () => {
     showSuccess("Poste de coût ajouté");
   };
 
+  // NEW: delete a specific cost completely
+  const handleDeleteCost = (costId: string) => {
+    setCosts(costs.filter(c => c.id !== costId));
+    showSuccess("Coût supprimé");
+  };
+
   const handleDeleteScenario = (id: string) => {
     if (scenarios.length <= 1) return;
     const newScenarios = scenarios.filter(s => s.id !== id);
@@ -383,6 +389,7 @@ const Index = () => {
                   setCosts(costs.map(c => ({ ...c, values: { ...c.values, [id]: c.values[defaultScenario.id] } })));
                 }}
                 onAddSpecificCost={handleAddCost}
+                onDeleteSpecificCost={handleDeleteCost}   {/* NEW PROP */}
                 calculateTotals={calculateTotals}
               />
             </div>
