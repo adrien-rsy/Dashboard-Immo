@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
   Button,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Home, Maximize } from "lucide-react";
 
 const formatEuro = (val: number) =>
   new Intl.NumberFormat("fr-FR", {
