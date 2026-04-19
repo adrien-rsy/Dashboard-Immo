@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Plus, Home, Maximize, Trash2, Camera, MapPin, Layers } from "lucide-react";
+import { Plus, Home, Maximize, Trash2, Camera, MapPin, Layers, X, ZoomIn } from "lucide-react";
 
 const formatEuro = (val: number) =>
   new Intl.NumberFormat("fr-FR", {
@@ -40,6 +40,14 @@ const LOT_TYPES = [
   "Local commercial",
 ];
 
+const LIBRARY_PHOTOS = [
+  "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&q=80&w=800",
+];
+
 const LotsTable = ({
   lots,
   scenarios,
@@ -50,6 +58,9 @@ const LotsTable = ({
 }) => {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [editingLot, setEditingLot] = React.useState<any>(null);
+  const [selectedPhoto, setSelectedPhoto] = React.useState<string | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
+
   const [formData, setFormData] = React.useState({
     name: "",
     type: "Appartement",
@@ -58,19 +69,20 @@ const LotsTable = ({
     status: "Disponible",
     price: "",
     notes: "",
-    isOccupied: false,
+    isOccupied: "false",
+    photos: [] as string[],
   });
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd(formData);
+    onAdd({ ...formData, isOccupied: formData.isOccupied === "true" });
     setIsAddOpen(false);
     resetForm();
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(editingLot.id, formData);
+    onUpdate(editingLot.id, { ...formData, isOccupied: formData.isOccupied === "true" });
     setEditingLot(null);
     resetForm();
   };
@@ -84,22 +96,40 @@ const LotsTable = ({
       status: "Disponible",
       price: "",
       notes: "",
-      isOccupied: false,
+      isOccupied: "false",
+      photos: [],
     });
   };
 
   const openEdit = (lot: any) => {
     setEditingLot(lot);
     setFormData({
-      name: lot.name,
+      name: lot.name || "",
       type: lot.type || "Appartement",
       level: lot.level || "",
       surface: lot.surface || "",
       status: lot.status || "Disponible",
-      price: lot.prices[activeScenarioId] || "",
+      price: lot.prices?.[activeScenarioId] || "",
       notes: lot.notes || "",
-      isOccupied: lot.isOccupied || false,
+      isOccupied: lot.isOccupied ? "true" : "false",
+      photos: lot.photos || [
+        "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&q=80&w=400",
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400"
+      ],
     });
+  };
+
+  const removePhoto = (index: number) => {
+    const newPhotos = [...formData.photos];
+    newPhotos.splice(index, 1);
+    setFormData({ ...formData, photos: newPhotos });
+  };
+
+  const addFromLibrary = (url: string) => {
+    if (!formData.photos.includes(url)) {
+      setFormData({ ...formData, photos: [...formData.photos, url] });
+    }
+    setIsLibraryOpen(false);
   };
 
   return (
@@ -289,7 +319,7 @@ const LotsTable = ({
         </table>
       </div>
 
-      {/* Edit Dialog - Styled like Scenario Dialog */}
+      {/* Edit Dialog */}
       <Dialog open={!!editingLot} onOpenChange={(open) => !open && setEditingLot(null)}>
         <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           {editingLot && (
@@ -320,7 +350,7 @@ const LotsTable = ({
 
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-8 space-y-10">
-                  {/* Section Description en haut */}
+                  {/* Section Description */}
                   <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
                     <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -328,14 +358,14 @@ const LotsTable = ({
                     </h4>
                     <Textarea 
                       placeholder="Ajoutez une description détaillée du lot..."
-                      className="rounded-2xl border-gray-200 focus:ring-black min-h-[120px] bg-white text-sm"
+                      className="rounded-2xl border-gray-200 focus:ring-black min-h-[100px] bg-white text-sm"
                       value={formData.notes}
                       onChange={e => setFormData({...formData, notes: e.target.value})}
                     />
                   </div>
 
-                  {/* Détails du lot */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Colonne Caractéristiques */}
                     <div className="space-y-6">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -392,40 +422,32 @@ const LotsTable = ({
                           </div>
                         </div>
                       </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-gray-400">Occupation</Label>
+                        <Select 
+                          value={formData.isOccupied} 
+                          onValueChange={(val) => setFormData({ ...formData, isOccupied: val })}
+                        >
+                          <SelectTrigger className="rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="false">Libre</SelectItem>
+                            <SelectItem value="true">Occupé</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
+                    {/* Colonne Commercialisation */}
                     <div className="space-y-6">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
-                        Statut & Commercialisation
+                        Commercialisation
                       </h4>
 
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center",
-                              formData.isOccupied ? "bg-amber-100 text-amber-600" : "bg-green-100 text-green-600"
-                            )}>
-                              {formData.isOccupied ? <MapPin className="w-5 h-5" /> : <Home className="w-5 h-5" />}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold">Occupation</span>
-                              <span className="text-[10px] text-gray-500">{formData.isOccupied ? 'Lot actuellement occupé' : 'Lot libre de toute occupation'}</span>
-                            </div>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={() => setFormData({...formData, isOccupied: !formData.isOccupied})}
-                            className={cn(
-                              "px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all",
-                              formData.isOccupied ? "bg-amber-600 text-white" : "bg-white text-gray-400 border border-gray-100"
-                            )}
-                          >
-                            {formData.isOccupied ? 'Occupé' : 'Libre'}
-                          </button>
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-bold uppercase text-gray-400">Statut Vente</Label>
@@ -464,23 +486,60 @@ const LotsTable = ({
                         <div className="w-1.5 h-4 bg-black rounded-full" />
                         Galerie Photos
                       </h4>
-                      <button className="flex items-center gap-1 text-[10px] font-bold uppercase text-black hover:bg-gray-50 px-2 py-1 rounded-lg transition-all">
-                        <Camera className="w-3 h-3" />
-                        Gérer les photos
-                      </button>
+                      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+                        <DialogTrigger asChild>
+                          <button className="flex items-center gap-1 text-[10px] font-bold uppercase text-black hover:bg-gray-50 px-2 py-1 rounded-lg transition-all">
+                            <Camera className="w-3 h-3" />
+                            Ajouter de la bibliothèque
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px] rounded-[2rem]">
+                          <DialogHeader>
+                            <DialogTitle>Bibliothèque d'images</DialogTitle>
+                          </DialogHeader>
+                          <div className="grid grid-cols-3 gap-4 p-4">
+                            {LIBRARY_PHOTOS.map((url, i) => (
+                              <div 
+                                key={i} 
+                                onClick={() => addFromLibrary(url)}
+                                className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-black transition-all"
+                              >
+                                <img src={url} alt="Library" className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex items-center justify-center relative group overflow-hidden">
+                      {formData.photos.map((url, i) => (
+                        <div key={i} className="aspect-square bg-gray-50 rounded-3xl border border-gray-100 relative group overflow-hidden shadow-sm">
                           <img 
-                            src={`https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&q=80&w=400&index=${i}`} 
-                            alt={`Lot ${i}`}
-                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                            src={url} 
+                            alt={`Photo ${i}`}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button 
+                              onClick={() => setSelectedPhoto(url)}
+                              className="p-2 bg-white rounded-full text-black hover:bg-gray-100 transition-colors"
+                            >
+                              <ZoomIn className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => removePhoto(i)}
+                              className="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
-                      <button className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-black hover:border-black transition-all group">
+                      <button 
+                        onClick={() => setIsLibraryOpen(true)}
+                        className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-black hover:border-black transition-all group"
+                      >
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                           <Plus className="w-5 h-5" />
                         </div>
@@ -501,6 +560,21 @@ const LotsTable = ({
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fullscreen Photo View */}
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="max-w-[95vw] h-[90vh] p-0 overflow-hidden bg-black/90 border-none rounded-[2rem]">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <img src={selectedPhoto || ""} className="max-w-full max-h-full object-contain" alt="Enlarged" />
+            <button 
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

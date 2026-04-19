@@ -7,8 +7,24 @@ import ProjectKPIs from '@/components/ProjectKPIs';
 import LotsTable from '@/components/LotsTable';
 import SalesScenarios from '@/components/SalesScenarios';
 import CostBreakdown from '@/components/CostBreakdown';
-import { MapPin, Calendar, Share2, Download } from 'lucide-react';
+import { MapPin, Calendar, Share2, Download, Briefcase } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const INITIAL_SCENARIOS = [
   { 
@@ -81,11 +97,27 @@ const Index = () => {
     return saved ? JSON.parse(saved) : INITIAL_COSTS;
   });
 
+  const [projectData, setProjectData] = useState({
+    title: 'Immeuble "Le Renaissance"',
+    address: '12 Rue de la République, 69002 Lyon',
+    startDate: '2024-01-01',
+    status: 'À étudier'
+  });
+
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('immo_scenarios_v8', JSON.stringify(scenarios));
     localStorage.setItem('immo_lots_v8', JSON.stringify(lots));
     localStorage.setItem('immo_costs_v8', JSON.stringify(costs));
-  }, [scenarios, lots, costs]);
+    localStorage.setItem('immo_project_v8', JSON.stringify(projectData));
+  }, [scenarios, lots, costs, projectData]);
+
+  // Update initializer for projectData to check localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('immo_project_v8');
+    if (saved) setProjectData(JSON.parse(saved));
+  }, []);
 
   const defaultScenario = useMemo(() => scenarios.find(s => s.isDefault) || scenarios[0], [scenarios]);
 
@@ -215,15 +247,19 @@ const Index = () => {
                 </span>
                 <span className="text-xs text-gray-400 font-medium">Réf: OP-2024-082</span>
               </div>
-              <h1 className="text-4xl font-black tracking-tight mb-3">Immeuble "Le Renaissance"</h1>
+              <h1 className="text-4xl font-black tracking-tight mb-3">{projectData.title}</h1>
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-gray-400" />
-                  <span>12 Rue de la République, 69002 Lyon</span>
+                  <span>{projectData.address}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Portage : {defaultScenario.duration} mois</span>
+                  <span>Début : {new Date(projectData.startDate).toLocaleDateString('fr-FR')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-gray-400" />
+                  <span className="font-bold text-black">{projectData.status}</span>
                 </div>
               </div>
             </div>
@@ -234,11 +270,80 @@ const Index = () => {
               <button className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
                 <Download className="w-5 h-5" />
               </button>
-              <button className="px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all">
+              <button
+                onClick={() => setIsEditProjectOpen(true)}
+                className="px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all"
+              >
                 Éditer l'opération
               </button>
             </div>
           </div>
+
+          <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
+            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+              <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+                <DialogTitle className="text-2xl font-black">Éditer l'opération</DialogTitle>
+              </DialogHeader>
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Titre de l'opération</Label>
+                  <Input
+                    value={projectData.title}
+                    onChange={e => setProjectData({...projectData, title: e.target.value})}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Adresse</Label>
+                  <Input
+                    value={projectData.address}
+                    onChange={e => setProjectData({...projectData, address: e.target.value})}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Date de début</Label>
+                    <Input
+                      type="date"
+                      value={projectData.startDate}
+                      onChange={e => setProjectData({...projectData, startDate: e.target.value})}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+                    <Select
+                      value={projectData.status}
+                      onValueChange={val => setProjectData({...projectData, status: val})}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="À étudier">À étudier</SelectItem>
+                        <SelectItem value="Offre envoyée">Offre envoyée</SelectItem>
+                        <SelectItem value="Offre acceptée">Offre acceptée</SelectItem>
+                        <SelectItem value="Sous compromis">Sous compromis</SelectItem>
+                        <SelectItem value="Acheté">Acheté</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter className="pt-4">
+                  <button
+                    onClick={() => {
+                      setIsEditProjectOpen(false);
+                      showSuccess("Opération mise à jour");
+                    }}
+                    className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+                  >
+                    Enregistrer les modifications
+                  </button>
+                </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <ProjectKPIs totals={totals} />
 
