@@ -8,8 +8,24 @@ import ProjectKPIs from '@/components/ProjectKPIs';
 import LotsTable from '@/components/LotsTable';
 import SalesScenarios from '@/components/SalesScenarios';
 import CostBreakdown from '@/components/CostBreakdown';
-import { MapPin, Calendar, Share2, Download, Briefcase } from 'lucide-react';
+import { MapPin, Calendar, Share2, Download, Briefcase, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ProjectDashboard = () => {
   const { projectId } = useParams();
@@ -17,18 +33,19 @@ const ProjectDashboard = () => {
   
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [editProjectForm, setEditProjectForm] = useState<any>(null);
 
   useEffect(() => {
     const savedProjects = localStorage.getItem('immo_projects_v9');
     if (savedProjects) {
       const projects = JSON.parse(savedProjects);
-      // If no ID is provided (Index page), take the last one or default
       const currentId = projectId || projects[0]?.id;
       const found = projects.find((p: any) => p.id === currentId);
       if (found) {
         setProject(found);
+        setEditProjectForm({ ...found.metadata });
       } else if (!projectId && projects.length === 0) {
-        // Redirect to projects if no data exists
         navigate('/projects');
       }
     } else {
@@ -42,6 +59,13 @@ const ProjectDashboard = () => {
     const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
     localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
     setProject(updatedProject);
+  };
+
+  const handleUpdateProjectMetadata = () => {
+    const updated = { ...project, metadata: editProjectForm };
+    saveProject(updated);
+    setIsEditProjectOpen(false);
+    showSuccess("Informations mises à jour");
   };
 
   const defaultScenario = useMemo(() => 
@@ -145,7 +169,14 @@ const ProjectDashboard = () => {
               <button className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
                 <Download className="w-5 h-5" />
               </button>
-              <button className="px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all">
+              <button 
+                onClick={() => {
+                  setEditProjectForm({ ...project.metadata });
+                  setIsEditProjectOpen(true);
+                }}
+                className="px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all flex items-center gap-2"
+              >
+                <Pencil className="w-4 h-4" />
                 Éditer l'opération
               </button>
             </div>
@@ -213,6 +244,73 @@ const ProjectDashboard = () => {
           </div>
         </div>
       </main>
+
+      <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+            <DialogTitle className="text-2xl font-black">Éditer l'opération</DialogTitle>
+          </DialogHeader>
+          {editProjectForm && (
+            <div className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Titre de l'opération</Label>
+                  <Input 
+                    value={editProjectForm.title} 
+                    onChange={e => setEditProjectForm({...editProjectForm, title: e.target.value})} 
+                    className="rounded-xl" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Adresse</Label>
+                  <Input 
+                    value={editProjectForm.address} 
+                    onChange={e => setEditProjectForm({...editProjectForm, address: e.target.value})} 
+                    className="rounded-xl" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Date de début</Label>
+                    <Input 
+                      type="date" 
+                      value={editProjectForm.startDate} 
+                      onChange={e => setEditProjectForm({...editProjectForm, startDate: e.target.value})} 
+                      className="rounded-xl" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+                    <Select 
+                      value={editProjectForm.status} 
+                      onValueChange={val => setEditProjectForm({...editProjectForm, status: val})}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="À étudier">À étudier</SelectItem>
+                        <SelectItem value="Offre envoyée">Offre envoyée</SelectItem>
+                        <SelectItem value="Offre acceptée">Offre acceptée</SelectItem>
+                        <SelectItem value="Compromis signé">Compromis signé</SelectItem>
+                        <SelectItem value="Acté">Acté</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="pt-4">
+                <button 
+                  onClick={handleUpdateProjectMetadata} 
+                  className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all"
+                >
+                  Sauvegarder les modifications
+                </button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

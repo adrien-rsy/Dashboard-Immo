@@ -37,6 +37,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
   
   const [innerEditingCost, setInnerEditingCost] = useState<any>(null);
 
+  // Auto-ouvrir l'édition si un nouveau scénario vient d'être créé
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
     if (lastScenario && lastScenario.id.startsWith('scenario_') && !editingScenario && (Date.now() - parseInt(lastScenario.id.split('_')[1])) < 2000) {
