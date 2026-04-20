@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
 
+import { supabase } from '@/lib/supabase';
+
 const INITIAL_SCENARIOS = [
   { id: 'pessimistic', name: 'Pessimiste', description: 'Hypothèse prudente.', icon: 'TrendingDown', isDefault: false, duration: 18, groupedSales: [], apport: 50000, interestRate: 4.5, agenceRate: 5, isNotaireReduced: false },
   { id: 'realistic', name: 'Réaliste', description: 'Scénario de marché.', icon: 'Zap', isDefault: true, duration: 14, groupedSales: [], apport: 80000, interestRate: 4.0, agenceRate: 5, isNotaireReduced: false },
@@ -40,6 +42,7 @@ const DEFAULT_COSTS = [
 const Projects = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -54,10 +57,8 @@ const Projects = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('immo_projects_v9');
-    if (saved) setProjects(JSON.parse(saved));
+    fetchProjects();
 
-    // Check if we are converting from prospect
     const conversion = localStorage.getItem('prospection_conversion');
     if (conversion) {
       const data = JSON.parse(conversion);
@@ -67,8 +68,25 @@ const Projects = () => {
     }
   }, []);
 
-  const handleCreate = () => {
-    const id = `project_${Date.now()}`;
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      const saved = localStorage.getItem('immo_projects_v9');
+      if (saved) setProjects(JSON.parse(saved));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
     const initialLots = Array.from({ length: parseInt(newProject.lotCount) || 1 }).map((_, i) => ({
       id: Date.now() + i,
       name: `Lot ${String(i + 1).padStart(2, '0')}`,
@@ -87,29 +105,48 @@ const Projects = () => {
       return c;
     });
 
-    const project = {
-      id,
+    const projectData = {
       metadata: { title: newProject.title, address: newProject.address, startDate: newProject.startDate, status: newProject.status },
       lots: initialLots,
       scenarios: INITIAL_SCENARIOS,
       costs: initialCosts
     };
 
-    const updatedProjects = [...projects, project];
-    setProjects(updatedProjects);
-    localStorage.setItem('immo_projects_v9', JSON.stringify(updatedProjects));
-    setIsCreateOpen(false);
-    showSuccess("Projet créé avec succès");
-    navigate(`/project/${id}`);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([projectData])
+        .select();
+
+      if (error) throw error;
+
+      setProjects([data[0], ...projects]);
+      setIsCreateOpen(false);
+      showSuccess("Projet créé avec succès");
+      navigate(`/project/${data[0].id}`);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      showError("Erreur lors de la création");
+    }
   };
 
-  const deleteProject = (e: React.MouseEvent, id: string) => {
+  const deleteProject = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm("Supprimer ce projet ?")) {
-      const updated = projects.filter(p => p.id !== id);
-      setProjects(updated);
-      localStorage.setItem('immo_projects_v9', JSON.stringify(updated));
+    if (!confirm("Supprimer ce projet ?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProjects(projects.filter(p => p.id !== id));
       showSuccess("Projet supprimé");
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      showError("Erreur lors de la suppression");
     }
   };
 

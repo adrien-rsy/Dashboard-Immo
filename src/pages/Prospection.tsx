@@ -36,6 +36,8 @@ import {
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+import { supabase } from '@/lib/supabase';
+
 interface Prospect {
   id: string;
   title: string;
@@ -43,12 +45,13 @@ interface Prospect {
   notes: string;
   link: string;
   status: "À appeler" | "Sans suite";
-  createdAt: string;
+  created_at?: string;
 }
 
 const Prospection = () => {
   const navigate = useNavigate();
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,46 +65,104 @@ const Prospection = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('immo_prospects_v2');
-    if (saved) setProspects(JSON.parse(saved));
+    fetchProspects();
   }, []);
 
-  const saveToLocal = (data: Prospect[]) => {
-    setProspects(data);
-    localStorage.setItem('immo_prospects_v2', JSON.stringify(data));
-  };
+  const fetchProspects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prospects')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const handleAdd = () => {
-    const newProspect: Prospect = {
-      ...formData,
-      id: `prospect_${Date.now()}`,
-      createdAt: new Date().toISOString()
-    };
-    saveToLocal([newProspect, ...prospects]);
-    setIsAddOpen(false);
-    setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
-    showSuccess("Prospect ajouté avec succès");
-  };
-
-  const handleUpdate = () => {
-    if (!editingProspect) return;
-    const updated = prospects.map(p => p.id === editingProspect.id ? editingProspect : p);
-    saveToLocal(updated);
-    setEditingProspect(null);
-    showSuccess("Prospect mis à jour");
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Supprimer ce prospect ?")) {
-      saveToLocal(prospects.filter(p => p.id !== id));
-      setEditingProspect(null);
-      showSuccess("Prospect supprimé");
+      if (error) throw error;
+      setProspects(data || []);
+    } catch (error) {
+      console.error('Error fetching prospects:', error);
+      // Fallback to localStorage if Supabase fails
+      const saved = localStorage.getItem('immo_prospects_v2');
+      if (saved) setProspects(JSON.parse(saved));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleStatusChange = (id: string, status: Prospect['status'], e?: React.MouseEvent) => {
+  const handleAdd = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prospects')
+        .insert([formData])
+        .select();
+
+      if (error) throw error;
+      
+      setProspects([data[0], ...prospects]);
+      setIsAddOpen(false);
+      setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
+      showSuccess("Prospect ajouté avec succès");
+    } catch (error) {
+      console.error('Error adding prospect:', error);
+      showError("Erreur lors de l'ajout");
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingProspect) return;
+    try {
+      const { error } = await supabase
+        .from('prospects')
+        .update({
+          title: editingProspect.title,
+          phone: editingProspect.phone,
+          notes: editingProspect.notes,
+          link: editingProspect.link,
+          status: editingProspect.status
+        })
+        .eq('id', editingProspect.id);
+
+      if (error) throw error;
+
+      setProspects(prospects.map(p => p.id === editingProspect.id ? editingProspect : p));
+      setEditingProspect(null);
+      showSuccess("Prospect mis à jour");
+    } catch (error) {
+      console.error('Error updating prospect:', error);
+      showError("Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer ce prospect ?")) return;
+    try {
+      const { error } = await supabase
+        .from('prospects')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProspects(prospects.filter(p => p.id !== id));
+      setEditingProspect(null);
+      showSuccess("Prospect supprimé");
+    } catch (error) {
+      console.error('Error deleting prospect:', error);
+      showError("Erreur lors de la suppression");
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: Prospect['status'], e?: React.MouseEvent) => {
     e?.stopPropagation();
-    saveToLocal(prospects.map(p => p.id === id ? { ...p, status } : p));
+    try {
+      const { error } = await supabase
+        .from('prospects')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+      setProspects(prospects.map(p => p.id === id ? { ...p, status } : p));
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
   };
 
   const convertToProject = (prospect: Prospect, e: React.MouseEvent) => {

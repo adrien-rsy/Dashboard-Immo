@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { supabase } from '@/lib/supabase';
+
 const ProjectDashboard = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -37,28 +39,56 @@ const ProjectDashboard = () => {
   const [editProjectForm, setEditProjectForm] = useState<any>(null);
 
   useEffect(() => {
-    const savedProjects = localStorage.getItem('immo_projects_v9');
-    if (savedProjects) {
-      const projects = JSON.parse(savedProjects);
-      const currentId = projectId || projects[0]?.id;
-      const found = projects.find((p: any) => p.id === currentId);
+    if (projectId) {
+      fetchProject();
+    }
+  }, [projectId]);
+
+  const fetchProject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (error) throw error;
+      setProject(data);
+      setEditProjectForm({ ...data.metadata });
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      // Fallback local storage logic if needed
+      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const found = savedProjects.find((p: any) => p.id === projectId);
       if (found) {
         setProject(found);
         setEditProjectForm({ ...found.metadata });
-      } else if (!projectId && projects.length === 0) {
+      } else {
         navigate('/projects');
       }
-    } else {
-      navigate('/projects');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [projectId]);
+  };
 
-  const saveProject = (updatedProject: any) => {
-    const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
-    const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
-    localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
-    setProject(updatedProject);
+  const saveProject = async (updatedProject: any) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          metadata: updatedProject.metadata,
+          lots: updatedProject.lots,
+          scenarios: updatedProject.scenarios,
+          costs: updatedProject.costs
+        })
+        .eq('id', updatedProject.id);
+
+      if (error) throw error;
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Error saving project:', error);
+      showError("Erreur lors de la sauvegarde");
+    }
   };
 
   const handleUpdateProjectMetadata = () => {
