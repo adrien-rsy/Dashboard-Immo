@@ -9,27 +9,28 @@ import {
   FileText, 
   Settings, 
   LogOut,
-  Users
+  Users,
+  Search as SearchIcon
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useNavigate, useLocation } from 'react-router-dom';
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Tableau de bord', active: true },
-  { icon: Building2, label: 'Opérations', active: false },
-  { icon: Layers, label: 'Gestion des lots', active: false },
-  { icon: Euro, label: 'Finances & Bilan', active: false },
-  { icon: FileText, label: 'Documents', active: false },
-  { icon: Users, label: 'Partenaires', active: false },
-];
+const Sidebar = ({ className }: { className?: string }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-interface SidebarProps {
-  className?: string;
-}
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Tableau de bord', path: '/' },
+    { icon: SearchIcon, label: 'Prospection', path: '/prospection' },
+    { icon: Building2, label: 'Mes Projets', path: '/projects' },
+    { icon: Layers, label: 'Gestion des lots', path: '#' },
+    { icon: Euro, label: 'Finances & Bilan', path: '#' },
+    { icon: FileText, label: 'Documents', path: '#' },
+  ];
 
-const Sidebar = ({ className }: SidebarProps) => {
   return (
     <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
-      <div className="flex items-center gap-3 mb-10 px-2">
+      <div className="flex items-center gap-3 mb-10 px-2 cursor-pointer" onClick={() => navigate('/')}>
         <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10">
           <Building2 className="text-white w-6 h-6" />
         </div>
@@ -40,23 +41,27 @@ const Sidebar = ({ className }: SidebarProps) => {
       </div>
 
       <nav className="flex-1 space-y-1">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-              item.active 
-                ? "bg-gray-50 text-black font-semibold" 
-                : "text-gray-500 hover:bg-gray-50 hover:text-black"
-            )}
-          >
-            <item.icon className={cn(
-              "w-5 h-5 transition-colors",
-              item.active ? "text-black" : "text-gray-400 group-hover:text-black"
-            )} />
-            <span className="text-sm">{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => item.path !== '#' && navigate(item.path)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                isActive 
+                  ? "bg-gray-50 text-black font-semibold" 
+                  : "text-gray-500 hover:bg-gray-50 hover:text-black"
+              )}
+            >
+              <item.icon className={cn(
+                "w-5 h-5 transition-colors",
+                isActive ? "text-black" : "text-gray-400 group-hover:text-black"
+              )} />
+              <span className="text-sm">{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="mt-auto pt-6 border-t border-gray-100 space-y-1">
