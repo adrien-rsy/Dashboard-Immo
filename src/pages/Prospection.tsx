@@ -7,14 +7,13 @@ import TopBar from '@/components/TopBar';
 import { 
   Plus, 
   Phone, 
-  Maximize, 
   Link as LinkIcon, 
   Trash2, 
   ExternalLink, 
   Search, 
-  MoreVertical,
   Briefcase,
-  X
+  X,
+  Tag
 } from 'lucide-react';
 import {
   Dialog,
@@ -38,11 +37,11 @@ import { cn } from '@/lib/utils';
 
 interface Prospect {
   id: string;
+  title: string;
   phone: string;
-  surface: string;
   notes: string;
   link: string;
-  status: "À appeler" | "Sans suite" | "Sens 8";
+  status: "À appeler" | "Sans suite";
   createdAt: string;
 }
 
@@ -53,21 +52,21 @@ const Prospection = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
+    title: '',
     phone: '',
-    surface: '',
     notes: '',
     link: '',
     status: 'À appeler' as Prospect['status']
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('immo_prospects_v1');
+    const saved = localStorage.getItem('immo_prospects_v2');
     if (saved) setProspects(JSON.parse(saved));
   }, []);
 
   const saveToLocal = (data: Prospect[]) => {
     setProspects(data);
-    localStorage.setItem('immo_prospects_v1', JSON.stringify(data));
+    localStorage.setItem('immo_prospects_v2', JSON.stringify(data));
   };
 
   const handleAdd = () => {
@@ -78,7 +77,7 @@ const Prospection = () => {
     };
     saveToLocal([newProspect, ...prospects]);
     setIsAddOpen(false);
-    setFormData({ phone: '', surface: '', notes: '', link: '', status: 'À appeler' });
+    setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
     showSuccess("Prospect ajouté avec succès");
   };
 
@@ -99,10 +98,9 @@ const Prospection = () => {
   };
 
   const convertToProject = (prospect: Prospect) => {
-    // Stocker temporairement les données du prospect pour la page de création
     localStorage.setItem('prospection_conversion', JSON.stringify({
-      title: `Projet - ${prospect.phone}`,
-      address: '', // Sera rempli par l'utilisateur
+      title: prospect.title || `Projet - ${prospect.phone}`,
+      address: '',
       lotCount: '1',
       acqPrice: '',
       travauxPrice: '',
@@ -112,6 +110,7 @@ const Prospection = () => {
   };
 
   const filteredProspects = prospects.filter(p => 
+    p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone.includes(searchTerm) || 
     p.notes.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -140,7 +139,7 @@ const Prospection = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Rechercher par téléphone ou notes..."
+              placeholder="Rechercher par titre, téléphone ou notes..."
               className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-black transition-all"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -165,16 +164,15 @@ const Prospection = () => {
                 <div className="flex items-center gap-4 mb-6">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                    prospect.status === 'À appeler' ? "bg-blue-50 text-blue-600" :
-                    prospect.status === 'Sens 8' ? "bg-purple-50 text-purple-600" : "bg-gray-100 text-gray-400"
+                    prospect.status === 'À appeler' ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-400"
                   )}>
-                    <Phone className="w-6 h-6" />
+                    <Tag className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold leading-tight">{prospect.phone || "Sans numéro"}</h3>
+                    <h3 className="text-xl font-bold leading-tight">{prospect.title || "Sans titre"}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Maximize className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-500 font-bold">{prospect.surface || '0'} m²</span>
+                      <Phone className="w-3 h-3 text-gray-400" />
+                      <span className="text-xs text-gray-500 font-bold">{prospect.phone || 'Non renseigné'}</span>
                     </div>
                   </div>
                 </div>
@@ -221,7 +219,6 @@ const Prospection = () => {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="À appeler">À appeler</SelectItem>
-                      <SelectItem value="Sens 8">Sens 8</SelectItem>
                       <SelectItem value="Sans suite">Sans suite</SelectItem>
                     </SelectContent>
                   </Select>
@@ -246,26 +243,24 @@ const Prospection = () => {
             <DialogTitle className="text-2xl font-black">Nouveau Prospect</DialogTitle>
           </DialogHeader>
           <div className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
-                <Input 
-                  placeholder="06 00 00 00 00"
-                  value={formData.phone} 
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="rounded-xl"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-gray-400">Surface (m²)</Label>
-                <Input 
-                  type="number"
-                  placeholder="0"
-                  value={formData.surface} 
-                  onChange={e => setFormData({...formData, surface: e.target.value})}
-                  className="rounded-xl"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
+              <Input 
+                placeholder="ex: Immeuble de rapport Lyon 3"
+                value={formData.title} 
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                className="rounded-xl"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
+              <Input 
+                placeholder="06 00 00 00 00"
+                value={formData.phone} 
+                onChange={e => setFormData({...formData, phone: e.target.value})}
+                className="rounded-xl"
+              />
             </div>
 
             <div className="space-y-2">
@@ -289,23 +284,6 @@ const Prospection = () => {
                 onChange={e => setFormData({...formData, notes: e.target.value})}
                 className="rounded-xl min-h-[100px]"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-gray-400">Statut initial</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(val: Prospect['status']) => setFormData({...formData, status: val})}
-              >
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="À appeler">À appeler</SelectItem>
-                  <SelectItem value="Sens 8">Sens 8</SelectItem>
-                  <SelectItem value="Sans suite">Sans suite</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <DialogFooter className="pt-4">

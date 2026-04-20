@@ -3,13 +3,11 @@
 import React from 'react';
 import { 
   Building2, 
-  LayoutDashboard, 
   Layers, 
   Euro, 
   FileText, 
   Settings, 
   LogOut,
-  Users,
   Search as SearchIcon
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -20,9 +18,8 @@ const Sidebar = ({ className }: { className?: string }) => {
   const location = useLocation();
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Tableau de bord', path: '/' },
-    { icon: SearchIcon, label: 'Prospection', path: '/prospection' },
     { icon: Building2, label: 'Mes Projets', path: '/projects' },
+    { icon: SearchIcon, label: 'Prospection', path: '/prospection' },
     { icon: Layers, label: 'Gestion des lots', path: '#' },
     { icon: Euro, label: 'Finances & Bilan', path: '#' },
     { icon: FileText, label: 'Documents', path: '#' },
@@ -30,7 +27,7 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
-      <div className="flex items-center gap-3 mb-10 px-2 cursor-pointer" onClick={() => navigate('/')}>
+      <div className="flex items-center gap-3 mb-10 px-2 cursor-pointer" onClick={() => navigate('/projects')}>
         <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10">
           <Building2 className="text-white w-6 h-6" />
         </div>
@@ -42,7 +39,7 @@ const Sidebar = ({ className }: { className?: string }) => {
 
       <nav className="flex-1 space-y-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path === '/projects' && location.pathname === '/');
           return (
             <button
               key={item.label}
