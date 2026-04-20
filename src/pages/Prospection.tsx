@@ -13,7 +13,8 @@ import {
   Search, 
   Briefcase,
   X,
-  Tag
+  Tag,
+  Pencil
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,6 +50,7 @@ const Prospection = () => {
   const navigate = useNavigate();
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
@@ -81,23 +83,29 @@ const Prospection = () => {
     showSuccess("Prospect ajouté avec succès");
   };
 
+  const handleUpdate = () => {
+    if (!editingProspect) return;
+    const updated = prospects.map(p => p.id === editingProspect.id ? editingProspect : p);
+    saveToLocal(updated);
+    setEditingProspect(null);
+    showSuccess("Prospect mis à jour");
+  };
+
   const handleDelete = (id: string) => {
     if (confirm("Supprimer ce prospect ?")) {
       saveToLocal(prospects.filter(p => p.id !== id));
+      setEditingProspect(null);
       showSuccess("Prospect supprimé");
     }
   };
 
-  const handleRemoveLink = (id: string) => {
-    saveToLocal(prospects.map(p => p.id === id ? { ...p, link: '' } : p));
-    showSuccess("Lien supprimé");
-  };
-
-  const handleStatusChange = (id: string, status: Prospect['status']) => {
+  const handleStatusChange = (id: string, status: Prospect['status'], e?: React.MouseEvent) => {
+    e?.stopPropagation();
     saveToLocal(prospects.map(p => p.id === id ? { ...p, status } : p));
   };
 
-  const convertToProject = (prospect: Prospect) => {
+  const convertToProject = (prospect: Prospect, e: React.MouseEvent) => {
+    e.stopPropagation();
     localStorage.setItem('prospection_conversion', JSON.stringify({
       title: prospect.title || `Projet - ${prospect.phone}`,
       address: '',
@@ -150,17 +158,9 @@ const Prospection = () => {
             {filteredProspects.map((prospect) => (
               <div 
                 key={prospect.id}
-                className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-100 relative"
+                onClick={() => setEditingProspect(prospect)}
+                className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-100 relative cursor-pointer"
               >
-                <div className="absolute top-6 right-6 flex items-center gap-2">
-                  <button 
-                    onClick={() => handleDelete(prospect.id)}
-                    className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
                 <div className="flex items-center gap-4 mb-6">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
@@ -168,8 +168,8 @@ const Prospection = () => {
                   )}>
                     <Tag className="w-6 h-6" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold leading-tight">{prospect.title || "Sans titre"}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold leading-tight truncate">{prospect.title || "Sans titre"}</h3>
                     <div className="flex items-center gap-2 mt-1">
                       <Phone className="w-3 h-3 text-gray-400" />
                       <span className="text-xs text-gray-500 font-bold">{prospect.phone || 'Non renseigné'}</span>
@@ -183,38 +183,15 @@ const Prospection = () => {
                   </p>
                 </div>
 
-                <div className="space-y-4 mb-8">
-                  {prospect.link ? (
-                    <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
-                      <a 
-                        href={prospect.link.startsWith('http') ? prospect.link : `https://${prospect.link}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Lien annonce
-                      </a>
-                      <button 
-                        onClick={() => handleRemoveLink(prospect.id)}
-                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-3 border border-dashed border-gray-200 rounded-xl text-center">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Aucun lien</span>
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex items-center justify-between pt-6 border-t border-gray-50">
                   <Select 
                     value={prospect.status} 
                     onValueChange={(val: Prospect['status']) => handleStatusChange(prospect.id, val)}
                   >
-                    <SelectTrigger className="w-32 h-9 text-[10px] font-bold uppercase rounded-xl border-none bg-gray-50">
+                    <SelectTrigger 
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-32 h-9 text-[10px] font-bold uppercase rounded-xl border-none bg-gray-50"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -224,7 +201,7 @@ const Prospection = () => {
                   </Select>
 
                   <button 
-                    onClick={() => convertToProject(prospect)}
+                    onClick={(e) => convertToProject(prospect, e)}
                     className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all shadow-md active:scale-95"
                   >
                     <Briefcase className="w-3 h-3" />
@@ -237,6 +214,7 @@ const Prospection = () => {
         </div>
       </main>
 
+      {/* Dialog Ajout */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
@@ -252,7 +230,6 @@ const Prospection = () => {
                 className="rounded-xl"
               />
             </div>
-            
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
               <Input 
@@ -262,7 +239,6 @@ const Prospection = () => {
                 className="rounded-xl"
               />
             </div>
-
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
               <div className="relative">
@@ -275,7 +251,6 @@ const Prospection = () => {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
               <Textarea 
@@ -285,7 +260,6 @@ const Prospection = () => {
                 className="rounded-xl min-h-[100px]"
               />
             </div>
-
             <DialogFooter className="pt-4">
               <button 
                 onClick={handleAdd}
@@ -295,6 +269,107 @@ const Prospection = () => {
               </button>
             </DialogFooter>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Edition / Détails */}
+      <Dialog open={!!editingProspect} onOpenChange={(open) => !open && setEditingProspect(null)}>
+        <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          {editingProspect && (
+            <>
+              <DialogHeader className="p-8 pb-4 bg-gray-50/50 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                    <Tag className="text-white w-5 h-5" />
+                  </div>
+                  <DialogTitle className="text-2xl font-black">Détails du Prospect</DialogTitle>
+                </div>
+                <button 
+                  onClick={() => handleDelete(editingProspect.id)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </DialogHeader>
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
+                  <Input 
+                    value={editingProspect.title} 
+                    onChange={e => setEditingProspect({...editingProspect, title: e.target.value})}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
+                    <Input 
+                      value={editingProspect.phone} 
+                      onChange={e => setEditingProspect({...editingProspect, phone: e.target.value})}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+                    <Select 
+                      value={editingProspect.status} 
+                      onValueChange={(val: Prospect['status']) => setEditingProspect({...editingProspect, status: val})}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="À appeler">À appeler</SelectItem>
+                        <SelectItem value="Sans suite">Sans suite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={editingProspect.link} 
+                      onChange={e => setEditingProspect({...editingProspect, link: e.target.value})}
+                      className="rounded-xl"
+                    />
+                    {editingProspect.link && (
+                      <a 
+                        href={editingProspect.link.startsWith('http') ? editingProspect.link : `https://${editingProspect.link}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
+                  <Textarea 
+                    value={editingProspect.notes} 
+                    onChange={e => setEditingProspect({...editingProspect, notes: e.target.value})}
+                    className="rounded-xl min-h-[120px]"
+                  />
+                </div>
+                <DialogFooter className="pt-4 flex gap-3">
+                  <button 
+                    onClick={() => setEditingProspect(null)}
+                    className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    onClick={handleUpdate}
+                    className="flex-2 px-10 py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+                  >
+                    Enregistrer les modifications
+                  </button>
+                </DialogFooter>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
