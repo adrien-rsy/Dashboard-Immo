@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Plus, Home, Maximize, Trash2, Camera, MapPin, Layers, X, ZoomIn } from "lucide-react";
+import { Plus, Home, Maximize, Trash2, Camera, Layers, X, ZoomIn } from "lucide-react";
 
 const formatEuro = (val: number) =>
   new Intl.NumberFormat("fr-FR", {
@@ -49,13 +49,13 @@ const LIBRARY_PHOTOS = [
 ];
 
 const LotsTable = ({
-  lots,
-  scenarios,
+  lots = [],
+  scenarios = [],
   activeScenarioId,
   onAdd,
   onUpdate,
   onDelete,
-}) => {
+}: any) => {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [editingLot, setEditingLot] = React.useState<any>(null);
   const [selectedPhoto, setSelectedPhoto] = React.useState<string | null>(null);
@@ -109,13 +109,10 @@ const LotsTable = ({
       level: lot.level || "",
       surface: lot.surface || "",
       status: lot.status || "Disponible",
-      price: lot.prices?.[activeScenarioId] || "",
+      price: lot.prices?.[activeScenarioId || ''] || "",
       notes: lot.notes || "",
       isOccupied: lot.isOccupied ? "true" : "false",
-      photos: lot.photos || [
-        "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&q=80&w=400",
-        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400"
-      ],
+      photos: lot.photos || [],
     });
   };
 
@@ -213,19 +210,6 @@ const LotsTable = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="level" className="text-[10px] font-bold uppercase text-gray-400">Niveau / Étage</Label>
-                <Input
-                  id="level"
-                  placeholder="ex: 1er étage"
-                  className="rounded-xl border-gray-100 focus:ring-black"
-                  value={formData.level}
-                  onChange={(e) =>
-                    setFormData({ ...formData, level: e.target.value })
-                  }
-                />
-              </div>
-
               <DialogFooter className="pt-4">
                 <button type="submit" className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]">
                   Enregistrer le lot
@@ -282,9 +266,12 @@ const LotsTable = ({
                 </td>
 
                 {scenarios.map((s) => {
-                  const groupIndex = s.groupedSales?.findIndex((g: any) => g.lotIds.includes(lot.id));
+                  const groupedSales = s.groupedSales || [];
+                  const groupIndex = groupedSales.findIndex((g: any) => 
+                    g?.lotIds && Array.isArray(g.lotIds) && g.lotIds.includes(lot.id)
+                  );
                   const isGrouped = groupIndex !== -1;
-                  const group = isGrouped ? s.groupedSales[groupIndex] : null;
+                  const group = isGrouped ? groupedSales[groupIndex] : null;
                   const groupColor = isGrouped ? (GROUP_COLORS[groupIndex] || GROUP_COLORS[0]) : null;
 
                   return (
@@ -298,13 +285,13 @@ const LotsTable = ({
                           style={isGrouped ? { color: groupColor } : {}}
                         >
                           {isGrouped
-                            ? formatEuro(group.price)
-                            : formatEuro(lot.prices[s.id] || 0)}
+                            ? formatEuro(group?.price || 0)
+                            : formatEuro(lot.prices?.[s.id] || 0)}
                         </span>
                         {isGrouped && (
                           <span
                             className="px-1.5 py-0.5 text-white text-[8px] font-black uppercase rounded shadow-sm"
-                            style={{ backgroundColor: groupColor }}
+                            style={{ backgroundColor: groupColor || '#000' }}
                           >
                             Groupé
                           </span>
@@ -319,7 +306,6 @@ const LotsTable = ({
         </table>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={!!editingLot} onOpenChange={(open) => !open && setEditingLot(null)}>
         <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           {editingLot && (
@@ -350,7 +336,6 @@ const LotsTable = ({
 
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-8 space-y-10">
-                  {/* Section Description */}
                   <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
                     <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -365,7 +350,6 @@ const LotsTable = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Colonne Caractéristiques */}
                     <div className="space-y-6">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -400,53 +384,29 @@ const LotsTable = ({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-gray-400">Surface (m²)</Label>
-                          <div className="relative">
-                            <Input 
-                              type="number"
-                              className="rounded-xl pr-10"
-                              value={formData.surface}
-                              onChange={e => setFormData({...formData, surface: e.target.value})}
-                            />
-                            <Maximize className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          </div>
+                          <Input 
+                            type="number"
+                            className="rounded-xl"
+                            value={formData.surface}
+                            onChange={e => setFormData({...formData, surface: e.target.value})}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-gray-400">Niveau</Label>
-                          <div className="relative">
-                            <Input 
-                              className="rounded-xl pr-10"
-                              value={formData.level}
-                              onChange={e => setFormData({...formData, level: e.target.value})}
-                            />
-                            <Layers className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          </div>
+                          <Input 
+                            className="rounded-xl"
+                            value={formData.level}
+                            onChange={e => setFormData({...formData, level: e.target.value})}
+                          />
                         </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-gray-400">Occupation</Label>
-                        <Select 
-                          value={formData.isOccupied} 
-                          onValueChange={(val) => setFormData({ ...formData, isOccupied: val })}
-                        >
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="false">Libre</SelectItem>
-                            <SelectItem value="true">Occupé</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
 
-                    {/* Colonne Commercialisation */}
                     <div className="space-y-6">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
                         Commercialisation
                       </h4>
-
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
@@ -466,7 +426,7 @@ const LotsTable = ({
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase text-gray-400">Prix de base (€)</Label>
+                            <Label className="text-[10px] font-bold uppercase text-gray-400">Prix (€)</Label>
                             <Input 
                               type="number"
                               className="rounded-xl font-bold"
@@ -479,37 +439,12 @@ const LotsTable = ({
                     </div>
                   </div>
 
-                  {/* Galerie Photos */}
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
                         Galerie Photos
                       </h4>
-                      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-                        <DialogTrigger asChild>
-                          <button className="flex items-center gap-1 text-[10px] font-bold uppercase text-black hover:bg-gray-50 px-2 py-1 rounded-lg transition-all">
-                            <Camera className="w-3 h-3" />
-                            Ajouter de la bibliothèque
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px] rounded-[2rem]">
-                          <DialogHeader>
-                            <DialogTitle>Bibliothèque d'images</DialogTitle>
-                          </DialogHeader>
-                          <div className="grid grid-cols-3 gap-4 p-4">
-                            {LIBRARY_PHOTOS.map((url, i) => (
-                              <div 
-                                key={i} 
-                                onClick={() => addFromLibrary(url)}
-                                className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-black transition-all"
-                              >
-                                <img src={url} alt="Library" className="w-full h-full object-cover" />
-                              </div>
-                            ))}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -518,18 +453,18 @@ const LotsTable = ({
                           <img 
                             src={url} 
                             alt={`Photo ${i}`}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <button 
                               onClick={() => setSelectedPhoto(url)}
-                              className="p-2 bg-white rounded-full text-black hover:bg-gray-100 transition-colors"
+                              className="p-2 bg-white rounded-full text-black"
                             >
                               <ZoomIn className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => removePhoto(i)}
-                              className="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
+                              className="p-2 bg-red-500 rounded-full text-white"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -538,11 +473,9 @@ const LotsTable = ({
                       ))}
                       <button 
                         onClick={() => setIsLibraryOpen(true)}
-                        className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-black hover:border-black transition-all group"
+                        className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400"
                       >
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                          <Plus className="w-5 h-5" />
-                        </div>
+                        <Plus className="w-5 h-5" />
                         <span className="text-[10px] font-bold uppercase">Ajouter</span>
                       </button>
                     </div>
@@ -560,21 +493,6 @@ const LotsTable = ({
               </DialogFooter>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Fullscreen Photo View */}
-      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
-        <DialogContent className="max-w-[95vw] h-[90vh] p-0 overflow-hidden bg-black/90 border-none rounded-[2rem]">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <img src={selectedPhoto || ""} className="max-w-full max-h-full object-contain" alt="Enlarged" />
-            <button 
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
