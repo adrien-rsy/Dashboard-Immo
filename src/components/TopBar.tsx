@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Search, Bell, ChevronDown, Menu } from 'lucide-react';
+import SyncIndicator from './SyncIndicator';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from './Sidebar';
