@@ -21,9 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const INITIAL_SCENARIOS = [
   { id: 'pessimistic', name: 'Pessimiste', description: 'Hypothèse prudente.', icon: 'TrendingDown', isDefault: false, duration: 18, groupedSales: [], apport: 50000, interestRate: 4.5, agenceRate: 5, isNotaireReduced: false },
@@ -69,6 +69,13 @@ const Projects = () => {
   }, []);
 
   const fetchProjects = async () => {
+    if (!isSupabaseConfigured()) {
+      const saved = localStorage.getItem('immo_projects_v9');
+      if (saved) setProjects(JSON.parse(saved));
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -112,6 +119,17 @@ const Projects = () => {
       costs: initialCosts
     };
 
+    if (!isSupabaseConfigured()) {
+      const id = `project_${Date.now()}`;
+      const updated = [{ id, ...projectData }, ...projects];
+      setProjects(updated);
+      localStorage.setItem('immo_projects_v9', JSON.stringify(updated));
+      setIsCreateOpen(false);
+      showSuccess("Projet créé avec succès (Local)");
+      navigate(`/project/${id}`);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -133,6 +151,14 @@ const Projects = () => {
   const deleteProject = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!confirm("Supprimer ce projet ?")) return;
+
+    if (!isSupabaseConfigured()) {
+      const updated = projects.filter(p => p.id !== id);
+      setProjects(updated);
+      localStorage.setItem('immo_projects_v9', JSON.stringify(updated));
+      showSuccess("Projet supprimé (Local)");
+      return;
+    }
 
     try {
       const { error } = await supabase

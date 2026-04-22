@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const ProjectDashboard = () => {
   const { projectId } = useParams();
@@ -45,6 +45,19 @@ const ProjectDashboard = () => {
   }, [projectId]);
 
   const fetchProject = async () => {
+    if (!isSupabaseConfigured()) {
+      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const found = savedProjects.find((p: any) => p.id === projectId);
+      if (found) {
+        setProject(found);
+        setEditProjectForm({ ...found.metadata });
+      } else {
+        navigate('/projects');
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -57,7 +70,6 @@ const ProjectDashboard = () => {
       setEditProjectForm({ ...data.metadata });
     } catch (error) {
       console.error('Error fetching project:', error);
-      // Fallback local storage logic if needed
       const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
       const found = savedProjects.find((p: any) => p.id === projectId);
       if (found) {
@@ -72,6 +84,14 @@ const ProjectDashboard = () => {
   };
 
   const saveProject = async (updatedProject: any) => {
+    if (!isSupabaseConfigured()) {
+      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
+      localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
+      setProject(updatedProject);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('projects')

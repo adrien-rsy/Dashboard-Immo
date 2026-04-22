@@ -33,10 +33,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface Prospect {
   id: string;
@@ -69,6 +69,13 @@ const Prospection = () => {
   }, []);
 
   const fetchProspects = async () => {
+    if (!isSupabaseConfigured()) {
+      const saved = localStorage.getItem('immo_prospects_v2');
+      if (saved) setProspects(JSON.parse(saved));
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('prospects')
@@ -79,7 +86,6 @@ const Prospection = () => {
       setProspects(data || []);
     } catch (error) {
       console.error('Error fetching prospects:', error);
-      // Fallback to localStorage if Supabase fails
       const saved = localStorage.getItem('immo_prospects_v2');
       if (saved) setProspects(JSON.parse(saved));
     } finally {
@@ -87,7 +93,25 @@ const Prospection = () => {
     }
   };
 
+  const saveToLocal = (data: Prospect[]) => {
+    setProspects(data);
+    localStorage.setItem('immo_prospects_v2', JSON.stringify(data));
+  };
+
   const handleAdd = async () => {
+    if (!isSupabaseConfigured()) {
+      const newProspect: Prospect = {
+        ...formData,
+        id: `prospect_${Date.now()}`,
+        created_at: new Date().toISOString()
+      };
+      saveToLocal([newProspect, ...prospects]);
+      setIsAddOpen(false);
+      setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
+      showSuccess("Prospect ajouté avec succès (Local)");
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('prospects')
@@ -108,6 +132,15 @@ const Prospection = () => {
 
   const handleUpdate = async () => {
     if (!editingProspect) return;
+
+    if (!isSupabaseConfigured()) {
+      const updated = prospects.map(p => p.id === editingProspect.id ? editingProspect : p);
+      saveToLocal(updated);
+      setEditingProspect(null);
+      showSuccess("Prospect mis à jour (Local)");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('prospects')
@@ -133,6 +166,14 @@ const Prospection = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce prospect ?")) return;
+
+    if (!isSupabaseConfigured()) {
+      saveToLocal(prospects.filter(p => p.id !== id));
+      setEditingProspect(null);
+      showSuccess("Prospect supprimé (Local)");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('prospects')
@@ -152,6 +193,12 @@ const Prospection = () => {
 
   const handleStatusChange = async (id: string, status: Prospect['status'], e?: React.MouseEvent) => {
     e?.stopPropagation();
+
+    if (!isSupabaseConfigured()) {
+      saveToLocal(prospects.map(p => p.id === id ? { ...p, status } : p));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('prospects')

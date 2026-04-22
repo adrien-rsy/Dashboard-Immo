@@ -1,7 +1,7 @@
 "use client";
 
-import ProjectDashboard from "./ProjectDashboard";
+import Projects from "./Projects";
 
-const Index = () => <ProjectDashboard />;
+const Index = () => <Projects />;
 
 export default Index;
