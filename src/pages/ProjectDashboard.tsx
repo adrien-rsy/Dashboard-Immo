@@ -278,6 +278,36 @@ const ProjectDashboard = () => {
                   const updatedCosts = project.costs.map((c: any) => ({ ...c, values: { ...c.values, [id]: c.values[defaultScenario.id] } }));
                   saveProject({ ...project, scenarios: [...project.scenarios, newScenario], lots: updatedLots, costs: updatedCosts });
                 }}
+                onDuplicateScenario={(sourceId: string) => {
+                  const sourceScenario = project.scenarios.find((s: any) => s.id === sourceId);
+                  if (!sourceScenario) return;
+
+                  const id = `scenario_${Date.now()}`;
+                  const newScenario = {
+                    ...sourceScenario,
+                    id,
+                    name: `${sourceScenario.name} (Copie)`,
+                    isDefault: false
+                  };
+
+                  const updatedLots = project.lots.map((l: any) => ({
+                    ...l,
+                    prices: { ...l.prices, [id]: l.prices[sourceId] }
+                  }));
+
+                  const updatedCosts = project.costs.map((c: any) => ({
+                    ...c,
+                    values: { ...c.values, [id]: c.values[sourceId] }
+                  }));
+
+                  saveProject({
+                    ...project,
+                    scenarios: [...project.scenarios, newScenario],
+                    lots: updatedLots,
+                    costs: updatedCosts
+                  });
+                  showSuccess("Scénario dupliqué");
+                }}
                 onAddSpecificCost={(newCostData: any, scenarioId: string) => {
                   const newCost = { id: newCostData.id, label: newCostData.label, category: "Divers", isGlobal: false, targetScenarioId: scenarioId, values: { [scenarioId]: Number(newCostData.value) } };
                   saveProject({ ...project, costs: [...project.costs, newCost] });
