@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, Pencil, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -27,7 +27,7 @@ const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'cur
 
 const GROUP_COLORS = ['#417078', '#c09068'];
 
-const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, onSetDefault, onAddScenario, onAddSpecificCost, calculateTotals }: any) => {
+const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, onSetDefault, onAddScenario, onDuplicateScenario, onAddSpecificCost, calculateTotals }: any) => {
   const [editingScenario, setEditingScenario] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [showAddCost, setShowAddCost] = useState(false);
@@ -220,7 +220,14 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rounded-xl">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => onDuplicateScenario(s.id)}
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Dupliquer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => onSetDefault(s.id)}
                       >
