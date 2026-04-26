@@ -8,7 +8,7 @@ import ProjectKPIs from '@/components/ProjectKPIs';
 import LotsTable from '@/components/LotsTable';
 import SalesScenarios from '@/components/SalesScenarios';
 import CostBreakdown from '@/components/CostBreakdown';
-import { MapPin, Calendar, Share2, Download, Briefcase, Pencil } from 'lucide-react';
+import { MapPin, Calendar, Info, Download, Briefcase, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import {
   Dialog,
@@ -37,6 +37,7 @@ const ProjectDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [editProjectForm, setEditProjectForm] = useState<any>(null);
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -192,9 +193,8 @@ const ProjectDashboard = () => {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-3 py-1 bg-black text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
-                  {defaultScenario?.name}
+                  Scénario : {defaultScenario?.name}
                 </span>
-                <span className="text-xs text-gray-400 font-medium">OP-{project.id.split('_')[1]?.slice(-4)}</span>
               </div>
               <h1 className="text-4xl font-black tracking-tight mb-3">{project.metadata.title}</h1>
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
@@ -204,17 +204,17 @@ const ProjectDashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Début : {new Date(project.metadata.startDate).toLocaleDateString('fr-FR')}</span>
+                  <span>Début : {project?.metadata?.startDate ? new Date(project.metadata.startDate).toLocaleDateString('fr-FR') : 'Non renseignée'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-gray-400" />
-                  <span className="font-bold text-black">{project.metadata.status}</span>
+                  <span className="text-gray-500">{project.metadata.status}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
-                <Share2 className="w-5 h-5" />
+              <button onClick={() => setIsDescriptionOpen(true)} className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
+                <Info className="w-5 h-5" />
               </button>
               <button className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
                 <Download className="w-5 h-5" />
@@ -349,6 +349,15 @@ const ProjectDashboard = () => {
                     className="rounded-xl" 
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-gray-400">Description</Label>
+                  <textarea 
+                    value={editProjectForm.description || ''} 
+                    onChange={e => setEditProjectForm({...editProjectForm, description: e.target.value})} 
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/5 resize-none text-sm min-h-[120px]" 
+                    placeholder="Décrivez l'opération..."
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Date de début</Label>
@@ -369,10 +378,10 @@ const ProjectDashboard = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="À étudier">À étudier</SelectItem>
+                        <SelectItem value="À l'étude">À l'étude</SelectItem>
                         <SelectItem value="Offre envoyée">Offre envoyée</SelectItem>
                         <SelectItem value="Offre acceptée">Offre acceptée</SelectItem>
-                        <SelectItem value="Compromis signé">Compromis signé</SelectItem>
+                        <SelectItem value="Sous compromis">Sous compromis</SelectItem>
                         <SelectItem value="Acté">Acté</SelectItem>
                       </SelectContent>
                     </Select>
@@ -387,6 +396,27 @@ const ProjectDashboard = () => {
                   Sauvegarder les modifications
                 </button>
               </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+            <DialogTitle className="text-3xl font-black">{project?.metadata.title}</DialogTitle>
+          </DialogHeader>
+          {project && (
+            <div className="p-8 space-y-8">
+              <div>
+                <p className="text-lg text-gray-600">{project.metadata.address}</p>
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Description</Label>
+                <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200 min-h-[300px] text-base text-gray-700 whitespace-pre-wrap">
+                  {project.metadata.description || "Aucune description"}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

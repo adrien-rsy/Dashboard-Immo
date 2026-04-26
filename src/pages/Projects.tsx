@@ -50,7 +50,8 @@ const Projects = () => {
     title: '',
     address: '',
     startDate: new Date().toISOString().split('T')[0],
-    status: 'À étudier',
+    status: 'À l\'étude',
+    description: '',
     acqPrice: '',
     travauxPrice: '',
     lotCount: '1'
@@ -113,7 +114,7 @@ const Projects = () => {
     });
 
     const projectData = {
-      metadata: { title: newProject.title, address: newProject.address, startDate: newProject.startDate, status: newProject.status },
+      metadata: { title: newProject.title, address: newProject.address, startDate: newProject.startDate, status: newProject.status, description: newProject.description },
       lots: initialLots,
       scenarios: INITIAL_SCENARIOS,
       costs: initialCosts
@@ -225,6 +226,7 @@ const Projects = () => {
             <div className="space-y-4">
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Titre</Label><Input value={newProject.title} onChange={e => setNewProject({...newProject, title: e.target.value})} className="rounded-xl" /></div>
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Adresse</Label><Input placeholder="45 Rue..." value={newProject.address} onChange={e => setNewProject({...newProject, address: e.target.value})} className="rounded-xl" /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Description</Label><textarea placeholder="Décrivez l'opération..." value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/5 resize-none text-sm min-h-[100px]" /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Début</Label><Input type="date" value={newProject.startDate} onChange={e => setNewProject({...newProject, startDate: e.target.value})} className="rounded-xl" /></div>
                 <div className="space-y-2">
@@ -232,9 +234,11 @@ const Projects = () => {
                   <Select value={newProject.status} onValueChange={val => setNewProject({...newProject, status: val})}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="À étudier">À étudier</SelectItem>
+                      <SelectItem value="À l'étude">À l'étude</SelectItem>
                       <SelectItem value="Offre envoyée">Offre envoyée</SelectItem>
                       <SelectItem value="Offre acceptée">Offre acceptée</SelectItem>
+                      <SelectItem value="Sous compromis">Sous compromis</SelectItem>
+                      <SelectItem value="Acté">Acté</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

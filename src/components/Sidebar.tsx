@@ -3,9 +3,6 @@
 import React from 'react';
 import { 
   Building2, 
-  Layers, 
-  Euro, 
-  FileText, 
   Settings, 
   LogOut,
   Search as SearchIcon
@@ -20,9 +17,6 @@ const Sidebar = ({ className }: { className?: string }) => {
   const navItems = [
     { icon: Building2, label: 'Mes Projets', path: '/projects' },
     { icon: SearchIcon, label: 'Prospection', path: '/prospection' },
-    { icon: Layers, label: 'Gestion des lots', path: '#' },
-    { icon: Euro, label: 'Finances & Bilan', path: '#' },
-    { icon: FileText, label: 'Documents', path: '#' },
   ];
 
   return (
