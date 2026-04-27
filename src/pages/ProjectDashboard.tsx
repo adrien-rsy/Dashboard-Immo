@@ -326,7 +326,7 @@ const ProjectDashboard = () => {
       </main>
 
       <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
             <DialogTitle className="text-2xl font-black">Éditer l'opération</DialogTitle>
           </DialogHeader>
@@ -402,7 +402,7 @@ const ProjectDashboard = () => {
       </Dialog>
 
       <Dialog open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[800px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0 h-auto sm:h-auto max-h-[90vh]">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
             <DialogTitle className="text-3xl font-black">{project?.metadata.title}</DialogTitle>
           </DialogHeader>

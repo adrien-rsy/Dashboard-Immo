@@ -129,6 +129,22 @@ const LotsTable = ({
     setIsLibraryOpen(false);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result && !formData.photos.includes(result)) {
+          setFormData({ ...formData, photos: [...formData.photos, result] });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   return (
     <div className="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border border-gray-100">
       <div className="p-8 flex items-center justify-between border-b border-gray-50">
@@ -144,7 +160,7 @@ const LotsTable = ({
               Ajouter un lot
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+          <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0">
             <DialogHeader className="p-8 pb-4 bg-gray-50/50">
               <DialogTitle className="text-2xl font-black">Nouveau Lot</DialogTitle>
             </DialogHeader>
@@ -307,7 +323,7 @@ const LotsTable = ({
       </div>
 
       <Dialog open={!!editingLot} onOpenChange={(open) => !open && setEditingLot(null)}>
-        <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0 max-h-[90vh]">
           {editingLot && (
             <>
               <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
@@ -492,6 +508,77 @@ const LotsTable = ({
                 </button>
               </DialogFooter>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Library Dialog */}
+      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0">
+          <DialogHeader className="p-8 pb-4 bg-gray-50/50">
+            <DialogTitle className="text-2xl font-black">Ajouter une photo</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Sélectionner depuis votre appareil</Label>
+              <label className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-3xl cursor-pointer hover:bg-gray-50 transition-colors">
+                <div className="text-center">
+                  <Camera className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-gray-600">Cliquez pour sélectionner des photos</p>
+                  <p className="text-xs text-gray-400 mt-1">ou glissez-les ici</p>
+                </div>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-gray-600">Galerie de photos téléchargées</h4>
+              <div className="grid grid-cols-3 gap-4 max-h-[300px] overflow-y-auto">
+                {formData.photos.map((url, i) => (
+                  <div key={i} className="relative group">
+                    <img 
+                      src={url} 
+                      alt={`Photo ${i}`}
+                      className="w-full h-24 object-cover rounded-2xl"
+                    />
+                    <button 
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4">
+              <button 
+                onClick={() => setIsLibraryOpen(false)}
+                className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+              >
+                Terminer l'ajout de photos
+              </button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Zoom Dialog */}
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="sm:max-w-[800px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 border-none shadow-2xl flex items-center justify-center mx-4 sm:mx-0 max-h-[90vh] overflow-auto">
+          {selectedPhoto && (
+            <img 
+              src={selectedPhoto} 
+              alt="Zoomed photo"
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl"
+            />
           )}
         </DialogContent>
       </Dialog>

@@ -287,7 +287,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={(open) => { if(!open) { setEditingScenario(null); setEditForm(null); } }}>
-        <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0 max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {editForm ? (
             <>
               <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
@@ -616,7 +616,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       {/* Inner Cost Edit Dialog (Sub-dialog) */}
       {innerEditingCost && (
         <Dialog open={!!innerEditingCost} onOpenChange={(open) => !open && setInnerEditingCost(null)}>
-          <DialogContent className="sm:max-w-[425px] rounded-[2rem] z-[100]">
+          <DialogContent className="sm:max-w-[425px] rounded-2xl sm:rounded-[2rem] z-[100] mx-4 sm:mx-0">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {innerEditingCost?.type === 'finance' ? <Calculator className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
