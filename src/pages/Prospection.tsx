@@ -44,7 +44,7 @@ interface Prospect {
   phone: string;
   notes: string;
   link: string;
-  status: "À appeler" | "Sans suite";
+  status: "À appeler" | "À visiter" | "À étudier" | "En attente";
   created_at?: string;
 }
 
@@ -55,6 +55,7 @@ const Prospection = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<Prospect['status'][]>(["À appeler", "À visiter", "À étudier", "En attente"]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -68,10 +69,26 @@ const Prospection = () => {
     fetchProspects();
   }, []);
 
+  const migrateOldStatuses = (prospects: any[]): Prospect[] => {
+    return prospects.map(p => ({
+      ...p,
+      status: 
+        p.status === 'À appeler' ? 'À appeler' :
+        p.status === 'Sans suite' ? 'En attente' :
+        p.status === 'A Appeler' ? 'À appeler' :
+        p.status === 'A visiter' ? 'À visiter' :
+        p.status === 'A etudier' ? 'À étudier' :
+        p.status
+    }));
+  };
+
   const fetchProspects = async () => {
     if (!isSupabaseConfigured()) {
       const saved = localStorage.getItem('immo_prospects_v2');
-      if (saved) setProspects(JSON.parse(saved));
+      if (saved) {
+        const migrated = migrateOldStatuses(JSON.parse(saved));
+        setProspects(migrated);
+      }
       setLoading(false);
       return;
     }
@@ -83,11 +100,15 @@ const Prospection = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProspects(data || []);
+      const migrated = migrateOldStatuses(data || []);
+      setProspects(migrated);
     } catch (error) {
       console.error('Error fetching prospects:', error);
       const saved = localStorage.getItem('immo_prospects_v2');
-      if (saved) setProspects(JSON.parse(saved));
+      if (saved) {
+        const migrated = migrateOldStatuses(JSON.parse(saved));
+        setProspects(migrated);
+      }
     } finally {
       setLoading(false);
     }
@@ -225,10 +246,19 @@ const Prospection = () => {
     navigate('/projects');
   };
 
+  const toggleStatusFilter = (status: Prospect['status']) => {
+    if (selectedStatuses.includes(status)) {
+      setSelectedStatuses(selectedStatuses.filter(s => s !== status));
+    } else {
+      setSelectedStatuses([...selectedStatuses, status]);
+    }
+  };
+
   const filteredProspects = prospects.filter(p => 
-    p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone.includes(searchTerm) || 
-    p.notes.toLowerCase().includes(searchTerm.toLowerCase())
+    p.notes.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    selectedStatuses.includes(p.status)
   );
 
   return (
@@ -262,6 +292,23 @@ const Prospection = () => {
             />
           </div>
 
+          <div className="mb-8 flex flex-wrap gap-3">
+            {(['À appeler', 'À visiter', 'À étudier', 'En attente'] as Prospect['status'][]).map((status) => (
+              <button
+                key={status}
+                onClick={() => toggleStatusFilter(status)}
+                className={cn(
+                  "px-4 py-2 rounded-xl font-bold text-sm transition-all",
+                  selectedStatuses.includes(status)
+                    ? "bg-black text-white shadow-lg"
+                    : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                )}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredProspects.map((prospect) => (
               <div 
@@ -272,7 +319,10 @@ const Prospection = () => {
                 <div className="flex items-center gap-4 mb-6">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                    prospect.status === 'À appeler' ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-400"
+                    prospect.status === 'A Appeler' ? "bg-blue-50 text-blue-600" :
+                    prospect.status === 'A visiter' ? "bg-purple-50 text-purple-600" :
+                    prospect.status === 'A etudier' ? "bg-orange-50 text-orange-600" :
+                    "bg-gray-100 text-gray-400"
                   )}>
                     <Tag className="w-6 h-6" />
                   </div>
@@ -291,26 +341,39 @@ const Prospection = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                <div className="flex items-center justify-between pt-6 border-t border-gray-50 gap-3">
+                  {prospect.link && (
+                    <a 
+                      href={prospect.link.startsWith('http') ? prospect.link : `https://${prospect.link}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors flex-shrink-0"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                    </a>
+                  )}
                   <Select 
                     value={prospect.status} 
                     onValueChange={(val: Prospect['status']) => handleStatusChange(prospect.id, val)}
                   >
                     <SelectTrigger 
                       onClick={(e) => e.stopPropagation()}
-                      className="w-32 h-9 text-[10px] font-bold uppercase rounded-xl border-none bg-gray-50"
+                      className="flex-1 h-9 text-[10px] font-bold uppercase rounded-xl border-none bg-gray-50"
                     >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="À appeler">À appeler</SelectItem>
-                      <SelectItem value="Sans suite">Sans suite</SelectItem>
+                      <SelectItem value="À visiter">À visiter</SelectItem>
+                      <SelectItem value="À étudier">À étudier</SelectItem>
+                      <SelectItem value="En attente">En attente</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <button 
                     onClick={(e) => convertToProject(prospect, e)}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all shadow-md active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all shadow-md active:scale-95 flex-shrink-0"
                   >
                     <Briefcase className="w-3 h-3" />
                     Créer projet
@@ -428,7 +491,9 @@ const Prospection = () => {
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         <SelectItem value="À appeler">À appeler</SelectItem>
-                        <SelectItem value="Sans suite">Sans suite</SelectItem>
+                        <SelectItem value="À visiter">À visiter</SelectItem>
+                        <SelectItem value="À étudier">À étudier</SelectItem>
+                        <SelectItem value="En attente">En attente</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
