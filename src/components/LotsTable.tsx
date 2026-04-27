@@ -160,7 +160,7 @@ const LotsTable = ({
               Ajouter un lot
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0">
+          <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto">
             <DialogHeader className="p-8 pb-4 bg-gray-50/50">
               <DialogTitle className="text-2xl font-black">Nouveau Lot</DialogTitle>
             </DialogHeader>
@@ -323,7 +323,7 @@ const LotsTable = ({
       </div>
 
       <Dialog open={!!editingLot} onOpenChange={(open) => !open && setEditingLot(null)}>
-        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0 max-h-[90vh]">
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl max-h-[90vh] w-[calc(100%-2rem)] sm:w-auto">
           {editingLot && (
             <>
               <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
@@ -514,7 +514,7 @@ const LotsTable = ({
 
       {/* Photo Library Dialog */}
       <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl mx-4 sm:mx-0">
+        <DialogContent className="sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
             <DialogTitle className="text-2xl font-black">Ajouter une photo</DialogTitle>
           </DialogHeader>
@@ -572,7 +572,7 @@ const LotsTable = ({
 
       {/* Photo Zoom Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
-        <DialogContent className="sm:max-w-[800px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 border-none shadow-2xl flex items-center justify-center mx-4 sm:mx-0 max-h-[90vh] overflow-auto">
+        <DialogContent className="sm:max-w-[800px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 border-none shadow-2xl flex items-center justify-center w-[calc(100%-2rem)] sm:w-auto max-h-[90vh] overflow-auto">
           {selectedPhoto && (
             <img 
               src={selectedPhoto} 
