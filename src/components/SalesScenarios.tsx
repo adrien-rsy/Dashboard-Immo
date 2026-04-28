@@ -287,10 +287,10 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={(open) => { if(!open) { setEditingScenario(null); setEditForm(null); } }}>
-        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl w-[calc(100vw-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {editForm ? (
             <>
-              <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
+              <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
                     <Calculator className="text-white w-5 h-5" />
@@ -311,8 +311,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 />
               </DialogHeader>
               
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="px-8 py-6 space-y-10">
+              <ScrollArea className="flex-1 min-h-0 w-full">
+                <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-10 w-full overflow-x-hidden">
                   {/* Infos Générales */}
                   <div className="max-w-md">
                     <div className="space-y-2">
@@ -440,14 +440,14 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       <div className="w-1.5 h-4 bg-black rounded-full" />
                       Ventes individuelles
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                       {lots.filter(l => !groupedLotIds.has(l.id)).map((lot: any) => (
-                        <div key={lot.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold">{lot.name}</span>
+                        <div key={lot.id} className="flex items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all min-w-0">
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-xs font-bold truncate">{lot.name}</span>
                             <span className="text-[10px] text-gray-400">{lot.surface} m²</span>
                           </div>
-                          <div className="relative w-28">
+                          <div className="relative w-20 sm:w-28 flex-shrink-0">
                             <Input 
                               type="number"
                               className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
@@ -596,10 +596,10 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 </div>
               </ScrollArea>
 
-              <DialogFooter className="p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
+              <DialogFooter className="p-4 sm:p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
                 <button 
                   onClick={handleSave}
-                  className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+                  className="w-full py-3 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base"
                 >
                   Valider les hypothèses
                 </button>

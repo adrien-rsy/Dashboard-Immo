@@ -323,10 +323,10 @@ const LotsTable = ({
       </div>
 
       <Dialog open={!!editingLot} onOpenChange={(open) => !open && setEditingLot(null)}>
-        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-y-auto border-none shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-[calc(100%-2rem)] sm:w-auto">
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-[calc(100vw-2rem)] sm:w-auto">
           {editingLot && (
             <>
-              <DialogHeader className="p-8 pb-4 bg-gray-50/50 shrink-0">
+              <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -350,8 +350,8 @@ const LotsTable = ({
                 </div>
               </DialogHeader>
 
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="p-8 space-y-10">
+              <ScrollArea className="flex-1 min-h-0 w-full">
+                <div className="p-4 sm:p-8 space-y-6 sm:space-y-10 w-full overflow-x-hidden">
                   <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
                     <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -365,18 +365,19 @@ const LotsTable = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+                    <div className="space-y-4 sm:space-y-6">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
                         Caractéristiques
                       </h4>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-gray-400">Nom</Label>
+                          <Label htmlFor="name-edit" className="text-[10px] font-bold uppercase text-gray-400">Nom</Label>
                           <Input 
-                            className="rounded-xl"
+                            id="name-edit"
+                            className="rounded-xl text-sm"
                             value={formData.name}
                             onChange={e => setFormData({...formData, name: e.target.value})}
                           />
