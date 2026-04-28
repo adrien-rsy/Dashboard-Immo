@@ -184,12 +184,12 @@ const ProjectDashboard = () => {
   if (!project) return <div className="p-10 text-center">Projet non trouvé</div>;
 
   return (
-    <div className="flex min-h-screen bg-[#F4F5F7] text-gray-900 font-sans">
+    <div className="flex h-screen bg-[#F4F5F7] text-gray-900 font-sans overflow-hidden">
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-0">
         <TopBar />
-        <div className="flex-1 overflow-y-auto px-4 md:px-10 pb-12">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 mt-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-0 pb-12">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-6 md:mb-10 md:mt-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-3 py-1 bg-black text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
