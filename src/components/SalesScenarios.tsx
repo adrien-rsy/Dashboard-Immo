@@ -291,11 +291,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           {editForm ? (
             <>
               <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
+                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
                     <Calculator className="text-white w-5 h-5" />
                   </div>
-                  <DialogTitle className="text-2xl font-black">Configuration du scénario</DialogTitle>
+                  <DialogTitle className="text-xl sm:text-2xl font-black truncate">Configuration du scénario</DialogTitle>
                 </div>
                 <Textarea 
                   placeholder="décrivez le scénario en quelques mots"
@@ -311,14 +311,14 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 />
               </DialogHeader>
               
-              <ScrollArea className="flex-1 min-h-0 w-full">
-                <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-10 w-full overflow-x-hidden">
+              <ScrollArea className="flex-1 min-h-0 w-full overflow-hidden">
+                <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-10 w-full min-w-0">
                   {/* Infos Générales */}
-                  <div className="max-w-md">
+                  <div className="max-w-md min-w-0">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
                       <Input 
-                        className="rounded-xl border-gray-100 focus:ring-black"
+                        className="rounded-xl border-gray-100 focus:ring-black text-xs sm:text-sm w-full"
                         value={editForm.metadata.name} 
                         autoFocus={false}
                         onChange={e => setEditForm({...editForm, metadata: {...editForm.metadata, name: e.target.value}})}
@@ -343,12 +343,12 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     </div>
 
                     {showAddGroup && (
-                      <div className="mb-6 p-5 bg-gray-50/50 rounded-2xl space-y-4 border border-gray-100 animate-in fade-in slide-in-from-top-2">
+                      <div className="mb-6 p-4 sm:p-5 bg-gray-50/50 rounded-2xl space-y-4 border border-gray-100 animate-in fade-in slide-in-from-top-2 min-w-0">
                         <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-gray-400">Sélectionner les lots à grouper</Label>
                           <div className="grid grid-cols-2 gap-2">
                             {lots.filter(l => !groupedLotIds.has(l.id)).map(lot => (
-                              <div key={lot.id} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-100">
+                              <div key={lot.id} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-100 min-w-0">
                                 <Checkbox 
                                   id={`group-lot-${lot.id}`}
                                   checked={newGroup.lotIds.includes(lot.id)}
@@ -357,7 +357,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                                     else setNewGroup({...newGroup, lotIds: newGroup.lotIds.filter(id => id !== lot.id)});
                                   }}
                                 />
-                                <label htmlFor={`group-lot-${lot.id}`} className="text-xs font-medium cursor-pointer">{lot.name}</label>
+                                <label htmlFor={`group-lot-${lot.id}`} className="text-xs font-medium cursor-pointer truncate">{lot.name}</label>
                               </div>
                             ))}
                           </div>
@@ -450,7 +450,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                           <div className="relative w-20 sm:w-28 flex-shrink-0">
                             <Input 
                               type="number"
-                              className="pr-7 h-9 text-sm font-bold rounded-lg border-gray-200"
+                              className="pr-6 h-8 sm:h-9 text-xs sm:text-sm font-bold rounded-lg border-gray-200 w-full"
                               value={editForm.lotPrices[lot.id]} 
                               onChange={e => setEditForm({...editForm, lotPrices: {...editForm.lotPrices, [lot.id]: Number(e.target.value)}})}
                               autoFocus={false}

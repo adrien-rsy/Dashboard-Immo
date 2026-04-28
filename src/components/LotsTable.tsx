@@ -326,13 +326,13 @@ const LotsTable = ({
         <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-[calc(100vw-2rem)] sm:w-auto">
           {editingLot && (
             <>
-              <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+              <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0 min-w-0">
+                <div className="flex items-center justify-between gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
                       <Home className="text-white w-5 h-5" />
                     </div>
-                    <DialogTitle className="text-2xl font-black">
+                    <DialogTitle className="text-xl sm:text-2xl font-black truncate">
                       Fiche Lot : {editingLot.name}
                     </DialogTitle>
                   </div>
@@ -343,41 +343,41 @@ const LotsTable = ({
                         setEditingLot(null);
                       }
                     }}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </DialogHeader>
 
-              <ScrollArea className="flex-1 min-h-0 w-full">
-                <div className="p-4 sm:p-8 space-y-6 sm:space-y-10 w-full overflow-x-hidden">
-                  <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+              <ScrollArea className="flex-1 min-h-0 w-full overflow-hidden">
+                <div className="p-4 sm:p-8 space-y-6 sm:space-y-10 w-full min-w-0">
+                  <div className="bg-gray-50/50 p-4 sm:p-6 rounded-3xl border border-gray-100 min-w-0">
                     <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
                       Description & Notes
                     </h4>
                     <Textarea 
                       placeholder="Ajoutez une description détaillée du lot..."
-                      className="rounded-2xl border-gray-200 focus:ring-black min-h-[100px] bg-white text-sm"
+                      className="rounded-2xl border-gray-200 focus:ring-black min-h-[100px] bg-white text-xs sm:text-sm"
                       value={formData.notes}
                       onChange={e => setFormData({...formData, notes: e.target.value})}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className="space-y-4 sm:space-y-6 min-w-0">
                       <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-black rounded-full" />
                         Caractéristiques
                       </h4>
                       
                       <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-0">
                           <Label htmlFor="name-edit" className="text-[10px] font-bold uppercase text-gray-400">Nom</Label>
                           <Input 
                             id="name-edit"
-                            className="rounded-xl text-sm"
+                            className="rounded-xl text-xs sm:text-sm min-w-0 w-full"
                             value={formData.name}
                             onChange={e => setFormData({...formData, name: e.target.value})}
                           />
@@ -500,11 +500,8 @@ const LotsTable = ({
                 </div>
               </ScrollArea>
 
-              <DialogFooter className="p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
-                <button 
-                  onClick={handleEditSubmit}
-                  className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
-                >
+              <DialogFooter className="p-4 sm:p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
+                <button type="submit" className="w-full py-3 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base">
                   Mettre à jour la fiche
                 </button>
               </DialogFooter>
