@@ -205,7 +205,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         >
           {editForm ? (
             <>
-              <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 sm:shrink-0">
+              <DialogHeader className="p-4 sm:p-8 pb-3 sm:pb-4 bg-gray-50/50 sm:shrink-0">
                 <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
                     <Calculator className="text-white w-5 h-5" />
@@ -223,15 +223,15 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 />
               </DialogHeader>
 
-              {/* Scrollable content — native on mobile, ScrollArea on desktop */}
-              <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-10 w-full min-w-0 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain">
+              {/* Scrollable content */}
+              <div className="px-4 sm:px-8 py-5 sm:py-6 space-y-8 sm:space-y-10 w-full min-w-0 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain">
 
                 {/* Nom du scénario */}
                 <div className="w-full min-w-0">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
                     <Input
-                      className="rounded-xl border-gray-100 focus:ring-black text-xs sm:text-sm w-full"
+                      className="rounded-xl border-gray-100 focus:ring-black text-sm w-full h-11"
                       value={editForm.metadata.name}
                       autoFocus={false}
                       onChange={e => setEditForm({ ...editForm, metadata: { ...editForm.metadata, name: e.target.value } })}
@@ -242,7 +242,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 {/* Groupes de vente */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
+                    <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
                       Groupes de vente
                     </h4>
@@ -273,7 +273,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase text-gray-400">Prix global du groupe (€)</Label>
-                        <Input type="number" placeholder="0" value={newGroup.price} onChange={e => setNewGroup({ ...newGroup, price: e.target.value })} className="bg-white border-gray-100 h-9 text-sm" autoFocus={false} />
+                        <Input type="number" placeholder="0" value={newGroup.price} onChange={e => setNewGroup({ ...newGroup, price: e.target.value })} className="bg-white border-gray-100 h-11 text-sm" autoFocus={false} />
                       </div>
                       <button onClick={handleCreateGroup} disabled={newGroup.lotIds.length < 2 || !newGroup.price} className="w-full py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-all shadow-md disabled:opacity-50">
                         Créer le groupe de vente
@@ -297,8 +297,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="relative w-28">
-                                <Input type="number" className="pr-7 h-9 text-sm font-bold rounded-lg bg-white" style={{ borderColor: `${groupColor}40` }} value={group.price} onChange={e => { const updatedGroups = editForm.groupedSales.map((g: any) => g.id === group.id ? { ...g, price: Number(e.target.value) } : g); setEditForm({ ...editForm, groupedSales: updatedGroups }); }} />
+                              <div className="relative w-32">
+                                <Input type="number" className="pr-7 h-11 text-sm font-bold rounded-lg bg-white" style={{ borderColor: `${groupColor}40` }} value={group.price} onChange={e => { const updatedGroups = editForm.groupedSales.map((g: any) => g.id === group.id ? { ...g, price: Number(e.target.value) } : g); setEditForm({ ...editForm, groupedSales: updatedGroups }); }} />
                                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-60" style={{ color: groupColor }}>€</span>
                               </div>
                               <button onClick={() => removeGroup(group.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
@@ -314,19 +314,27 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
 
                 {/* Ventes individuelles */}
                 <div>
-                  <h4 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black mb-4 flex items-center gap-2">
                     <div className="w-1.5 h-4 bg-black rounded-full" />
                     Ventes individuelles
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                  {/* Mobile: 1 col full-width. Desktop: 2 cols */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {lots.filter(l => !groupedLotIds.has(l.id)).map((lot: any) => (
-                      <div key={lot.id} className="flex items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all min-w-0">
+                      <div key={lot.id} className="flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all min-w-0">
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-xs font-bold truncate">{lot.name}</span>
-                          <span className="text-[10px] text-gray-400">{lot.surface} m²</span>
+                          <span className="text-sm font-bold truncate">{lot.name}</span>
+                          <span className="text-xs text-gray-400">{lot.surface} m²</span>
                         </div>
-                        <div className="relative w-20 sm:w-28 flex-shrink-0">
-                          <Input type="number" className="pr-6 h-8 sm:h-9 text-xs sm:text-sm font-bold rounded-lg border-gray-200 w-full" value={editForm.lotPrices[lot.id]} onChange={e => setEditForm({ ...editForm, lotPrices: { ...editForm.lotPrices, [lot.id]: Number(e.target.value) } })} autoFocus={false} />
+                        {/* Prix input — plus large sur mobile */}
+                        <div className="relative w-32 sm:w-28 flex-shrink-0">
+                          <Input
+                            type="number"
+                            className="pr-7 h-11 sm:h-9 text-sm font-bold rounded-xl border-gray-200 w-full"
+                            value={editForm.lotPrices[lot.id]}
+                            onChange={e => setEditForm({ ...editForm, lotPrices: { ...editForm.lotPrices, [lot.id]: Number(e.target.value) } })}
+                            autoFocus={false}
+                          />
                           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">€</span>
                         </div>
                       </div>
@@ -337,11 +345,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 {/* Structure des coûts */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-black uppercase tracking-widest text-black flex items-center gap-2">
+                    <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black flex items-center gap-2">
                       <div className="w-1.5 h-4 bg-black rounded-full" />
                       Structure des coûts
                     </h4>
-                    <button onClick={() => setShowAddCost(!showAddCost)} className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-all">
+                    <button onClick={() => setShowAddCost(!showAddCost)} className="flex items-center gap-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-all whitespace-nowrap">
                       <Plus className="w-3 h-3" />Coût spécifique
                     </button>
                   </div>
@@ -351,11 +359,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label className="text-[10px] font-bold uppercase text-blue-600">Libellé</Label>
-                          <Input placeholder="ex: Aléa technique" value={newSpecificCost.label} autoFocus={false} onChange={e => setNewSpecificCost({ ...newSpecificCost, label: e.target.value })} className="bg-white border-blue-100 h-9 text-sm" />
+                          <Input placeholder="ex: Aléa technique" value={newSpecificCost.label} autoFocus={false} onChange={e => setNewSpecificCost({ ...newSpecificCost, label: e.target.value })} className="bg-white border-blue-100 h-11 text-sm" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-[10px] font-bold uppercase text-blue-600">Montant (€)</Label>
-                          <Input type="number" placeholder="0" autoFocus={false} value={newSpecificCost.value} onChange={e => setNewSpecificCost({ ...newSpecificCost, value: e.target.value })} className="bg-white border-blue-100 h-9 text-sm" />
+                          <Input type="number" placeholder="0" autoFocus={false} value={newSpecificCost.value} onChange={e => setNewSpecificCost({ ...newSpecificCost, value: e.target.value })} className="bg-white border-blue-100 h-11 text-sm" />
                         </div>
                       </div>
                       <div className="space-y-1.5">
@@ -366,7 +374,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     </div>
                   )}
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {costs.filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id).map((cost: any) => {
                       let displayValue = editForm.costValues[cost.id] ?? 0;
                       if (cost.type === 'notaire') displayValue = Math.round((editForm.costValues['acq'] || 0) * (editForm.metadata?.isNotaireReduced ? 0.03 : 0.08));
@@ -381,7 +389,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                         displayValue = Math.round(financed * (editForm.metadata?.duration || 0) * ((editForm.metadata?.interestRate || 0) / 100 / 12));
                       }
                       return (
-                        <div key={cost.id} className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all cursor-pointer group"
+                        <div key={cost.id} className="flex items-center justify-between gap-3 p-3.5 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all cursor-pointer group"
                           onClick={() => {
                             if (cost.type === 'finance') setInnerEditingCost({ ...cost, apport: editForm.metadata.apport, interestRate: editForm.metadata.interestRate, duration: editForm.metadata.duration, note: (editForm.costNotes || {})[cost.id] || '' });
                             else if (cost.type === 'agence') setInnerEditingCost({ ...cost, agenceRate: editForm.metadata.agenceRate, note: (editForm.costNotes || {})[cost.id] || '' });
@@ -389,22 +397,22 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                             else setInnerEditingCost({ ...cost, currentValue: editForm.costValues[cost.id] || 0, note: (editForm.costNotes || {})[cost.id] || '' });
                           }}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={cn("w-2 h-2 rounded-full", cost.isGlobal ? "bg-gray-200" : "bg-blue-400")} />
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-gray-700 group-hover:text-black transition-colors">{cost.label}</span>
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className={cn("w-2 h-2 rounded-full flex-shrink-0", cost.isGlobal ? "bg-gray-200" : "bg-blue-400")} />
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-bold text-gray-700 group-hover:text-black transition-colors truncate">{cost.label}</span>
                               <div className="flex items-center gap-2">
-                                {cost.type === 'notaire' && <span className="text-[8px] text-gray-400 font-bold uppercase">{editForm.metadata.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
-                                {cost.type === 'agence' && <span className="text-[8px] text-gray-400 font-bold uppercase">Taux : {editForm.metadata.agenceRate}%</span>}
-                                {cost.type === 'finance' && <span className="text-[8px] text-gray-400 font-bold uppercase">{editForm.metadata.interestRate}% sur {editForm.metadata.duration} mois</span>}
+                                {cost.type === 'notaire' && <span className="text-[9px] text-gray-400 font-bold uppercase">{editForm.metadata.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
+                                {cost.type === 'agence' && <span className="text-[9px] text-gray-400 font-bold uppercase">Taux : {editForm.metadata.agenceRate}%</span>}
+                                {cost.type === 'finance' && <span className="text-[9px] text-gray-400 font-bold uppercase">{editForm.metadata.interestRate}% — {editForm.metadata.duration} mois</span>}
                               </div>
                             </div>
                           </div>
-                          <span className="text-sm font-bold text-gray-900">{formatEuro(displayValue)}</span>
+                          <span className="text-sm font-bold text-gray-900 flex-shrink-0">{formatEuro(displayValue)}</span>
                         </div>
                       );
                     })}
-                    <div className="flex items-center justify-between gap-4 p-6 bg-white border border-gray-100 rounded-[2rem] mt-3 shadow-sm">
+                    <div className="flex items-center justify-between gap-4 p-5 bg-white border border-gray-100 rounded-[2rem] mt-2 shadow-sm">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Coût total</p>
                         <span className="text-3xl font-bold text-black">
@@ -424,9 +432,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 </div>
 
               </div>
-              {/* Footer sticky en bas sur desktop, normal sur mobile */}
               <DialogFooter className="p-4 sm:p-8 bg-gray-50/50 border-t border-gray-100 sm:shrink-0">
-                <button onClick={handleSave} className="w-full py-3 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base">
+                <button onClick={handleSave} className="w-full py-3.5 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base">
                   Valider les hypothèses
                 </button>
               </DialogFooter>
@@ -465,15 +472,15 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
-                      <Input type="number" className="rounded-xl" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({ ...innerEditingCost, duration: Number(e.target.value) })} autoFocus={false} />
+                      <Input type="number" className="rounded-xl h-11" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({ ...innerEditingCost, duration: Number(e.target.value) })} autoFocus={false} />
                     </div>
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
-                      <Input type="number" className="rounded-xl border-black/20 focus:ring-black" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({ ...innerEditingCost, apport: Number(e.target.value) })} autoFocus={false} />
+                      <Input type="number" className="rounded-xl border-black/20 focus:ring-black h-11" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({ ...innerEditingCost, apport: Number(e.target.value) })} autoFocus={false} />
                     </div>
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
-                      <Input type="number" step="0.1" className="rounded-xl" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, interestRate: Number(e.target.value) })} autoFocus={false} />
+                      <Input type="number" step="0.1" className="rounded-xl h-11" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, interestRate: Number(e.target.value) })} autoFocus={false} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
@@ -485,7 +492,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Taux d'agence (%)</Label>
-                    <Input type="number" value={innerEditingCost.agenceRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, agenceRate: Number(e.target.value) })} autoFocus={false} />
+                    <Input type="number" className="h-11" value={innerEditingCost.agenceRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, agenceRate: Number(e.target.value) })} autoFocus={false} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
@@ -510,7 +517,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Montant (€)</Label>
-                    <Input type="number" value={innerEditingCost?.currentValue || 0} onChange={e => setInnerEditingCost({ ...innerEditingCost, currentValue: Number(e.target.value) })} autoFocus={false} />
+                    <Input type="number" className="h-11" value={innerEditingCost?.currentValue || 0} onChange={e => setInnerEditingCost({ ...innerEditingCost, currentValue: Number(e.target.value) })} autoFocus={false} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
@@ -524,7 +531,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <Trash2 className="w-4 h-4" />Supprimer
                   </button>
                 )}
-                <button type="submit" className="flex-1 py-3 bg-black text-white rounded-xl font-bold">Mettre à jour</button>
+                <button type="submit" className="flex-1 py-3.5 bg-black text-white rounded-xl font-bold">Mettre à jour</button>
               </DialogFooter>
             </form>
           </DialogContent>
