@@ -80,8 +80,7 @@ const LotsTable = ({
     resetForm();
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditSubmit = () => {
     onUpdate(editingLot.id, { ...formData, isOccupied: formData.isOccupied === "true" });
     setEditingLot(null);
     resetForm();
@@ -501,7 +500,11 @@ const LotsTable = ({
               </ScrollArea>
 
               <DialogFooter className="p-4 sm:p-8 bg-gray-50/50 border-t border-gray-100 shrink-0">
-                <button type="submit" className="w-full py-3 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base">
+                <button
+                  type="button"
+                  onClick={handleEditSubmit}
+                  className="w-full py-3 sm:py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm sm:text-base"
+                >
                   Mettre à jour la fiche
                 </button>
               </DialogFooter>
