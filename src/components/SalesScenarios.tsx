@@ -287,7 +287,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
       </div>
 
       <Dialog open={!!editingScenario} onOpenChange={(open) => { if(!open) { setEditingScenario(null); setEditForm(null); } }}>
-        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl w-[calc(100vw-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[850px] rounded-2xl sm:rounded-[2.5rem] h-auto sm:h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl w-[calc(100vw-2rem)] sm:w-[850px] max-h-[calc(100vh-2rem)] sm:max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {editForm ? (
             <>
               <DialogHeader className="p-4 sm:p-8 pb-2 sm:pb-4 bg-gray-50/50 shrink-0">
@@ -314,7 +314,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
               <ScrollArea className="flex-1 min-h-0 w-full overflow-hidden">
                 <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-10 w-full min-w-0">
                   {/* Infos Générales */}
-                  <div className="max-w-md min-w-0">
+                  <div className="w-full min-w-0">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
                       <Input 
