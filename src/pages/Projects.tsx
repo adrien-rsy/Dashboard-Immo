@@ -227,7 +227,7 @@ const Projects = () => {
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Titre</Label><Input value={newProject.title} onChange={e => setNewProject({...newProject, title: e.target.value})} className="rounded-xl" /></div>
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Adresse</Label><Input placeholder="45 Rue..." value={newProject.address} onChange={e => setNewProject({...newProject, address: e.target.value})} className="rounded-xl" /></div>
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Description</Label><textarea placeholder="Décrivez l'opération..." value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/5 resize-none text-sm min-h-[100px]" /></div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-gray-400">Début</Label><Input type="date" value={newProject.startDate} onChange={e => setNewProject({...newProject, startDate: e.target.value})} className="rounded-xl" /></div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
