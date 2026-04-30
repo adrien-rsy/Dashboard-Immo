@@ -6,6 +6,12 @@ import SyncIndicator from './SyncIndicator';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from './Sidebar';
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  const salutation = hour >= 18 ? 'Bonsoir' : 'Bonjour';
+  return `${salutation} M. Roussey`;
+};
+
 const TopBar = () => {
   return (
     <div className="h-20 flex items-center justify-between px-4 md:px-8 bg-transparent">
@@ -20,7 +26,7 @@ const TopBar = () => {
             <Sidebar />
           </SheetContent>
         </Sheet>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Bonjour, Adrien</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">{getGreeting()}</h1>
       </div>
       
       <div className="flex items-center gap-3 md:gap-6">
