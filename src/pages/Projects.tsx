@@ -50,7 +50,7 @@ const Projects = () => {
     title: '',
     address: '',
     startDate: new Date().toISOString().split('T')[0],
-    status: 'À l\'étude',
+    status: 'A l\'étude',
     description: '',
     acqPrice: '',
     travauxPrice: '',
@@ -220,7 +220,7 @@ const Projects = () => {
       </main>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
+        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50"><DialogTitle className="text-2xl font-black">Nouveau Projet</DialogTitle></DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-4">

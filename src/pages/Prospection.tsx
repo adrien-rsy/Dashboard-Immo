@@ -387,7 +387,7 @@ const Prospection = () => {
 
       {/* Dialog Ajout */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
+        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
             <DialogTitle className="text-2xl font-black">Nouveau Prospect</DialogTitle>
           </DialogHeader>
@@ -445,7 +445,7 @@ const Prospection = () => {
 
       {/* Dialog Edition / Détails */}
       <Dialog open={!!editingProspect} onOpenChange={(open) => !open && setEditingProspect(null)}>
-        <DialogContent className="sm:max-w-[550px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
+        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           {editingProspect && (
             <>
               <DialogHeader className="p-8 pb-4 bg-gray-50/50 flex flex-row items-center justify-between">
