@@ -325,6 +325,7 @@ const ProjectDashboard = () => {
         </div>
       </main>
 
+      {/* Edit project dialog */}
       <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
@@ -401,8 +402,9 @@ const ProjectDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Info / description dialog */}
       <Dialog open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl w-[calc(100%-2rem)] sm:w-auto h-auto sm:h-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
+        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           <DialogHeader className="p-8 pb-4 bg-gray-50/50">
             <DialogTitle className="text-3xl font-black">{project?.metadata.title}</DialogTitle>
           </DialogHeader>
