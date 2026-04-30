@@ -295,16 +295,30 @@ const ProjectDashboard = () => {
                     prices: { ...l.prices, [id]: l.prices[sourceId] }
                   }));
 
-                  const updatedCosts = project.costs.map((c: any) => ({
+                  // Copier les valeurs des coûts globaux pour le nouveau scénario
+                  const updatedCosts = project.costs.map((c: any) => {
+                    if (c.isGlobal) {
+                      return { ...c, values: { ...c.values, [id]: c.values[sourceId] ?? 0 } };
+                    }
+                    return c;
+                  });
+
+                  // Dupliquer les coûts spécifiques au scénario source en nouvelles entrées
+                  const specificCosts = project.costs.filter(
+                    (c: any) => !c.isGlobal && c.targetScenarioId === sourceId
+                  );
+                  const newSpecificCosts = specificCosts.map((c: any) => ({
                     ...c,
-                    values: { ...c.values, [id]: c.values[sourceId] }
+                    id: `cost_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    targetScenarioId: id,
+                    values: { [id]: c.values[sourceId] ?? 0 }
                   }));
 
                   saveProject({
                     ...project,
                     scenarios: [...project.scenarios, newScenario],
                     lots: updatedLots,
-                    costs: updatedCosts
+                    costs: [...updatedCosts, ...newSpecificCosts]
                   });
                   showSuccess("Scénario dupliqué");
                 }}
