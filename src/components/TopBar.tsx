@@ -9,7 +9,7 @@ import Sidebar from './Sidebar';
 const getGreeting = () => {
   const hour = new Date().getHours();
   const salutation = hour >= 18 ? 'Bonsoir' : 'Bonjour';
-  return `${salutation} M. Roussey`;
+  return `${salutation} Adrien`;
 };
 
 const TopBar = () => {
