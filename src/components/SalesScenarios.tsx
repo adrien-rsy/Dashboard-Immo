@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -34,6 +34,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
   const [newSpecificCost, setNewSpecificCost] = useState({ label: '', value: '', note: '' });
   const [newGroup, setNewGroup] = useState({ lotIds: [] as number[], price: '' });
   const [innerEditingCost, setInnerEditingCost] = useState<any>(null);
+  const [scenarioToDelete, setScenarioToDelete] = useState<any>(null);
 
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
@@ -167,7 +168,10 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); onSetDefault(s.id); }}>
                       <Check className="w-4 h-4 mr-2" />Définir par défaut
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={(e) => { e.stopPropagation(); onDeleteScenario(s.id); }}>
+                    <DropdownMenuItem
+                      className="text-red-600 cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); setScenarioToDelete(s); }}
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />Supprimer
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -196,6 +200,42 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           );
         })}
       </div>
+
+      {/* Confirmation suppression scénario */}
+      <Dialog open={!!scenarioToDelete} onOpenChange={(open) => { if (!open) setScenarioToDelete(null); }}>
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[400px] rounded-2xl sm:rounded-[2rem] p-0 border-none shadow-2xl">
+          <div className="p-8 space-y-6">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black mb-1">Supprimer ce scénario ?</h2>
+                <p className="text-sm text-gray-500">
+                  Le scénario <span className="font-bold text-gray-800">&laquo;{scenarioToDelete?.name}&raquo;</span> sera définitivement supprimé.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  onDeleteScenario(scenarioToDelete.id);
+                  setScenarioToDelete(null);
+                }}
+                className="w-full py-3.5 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-all active:scale-[0.98] shadow-lg shadow-red-500/20"
+              >
+                Supprimer définitivement
+              </button>
+              <button
+                onClick={() => setScenarioToDelete(null)}
+                className="w-full py-3.5 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-[0.98]"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Main scenario edit dialog */}
       <Dialog open={!!editingScenario} onOpenChange={(open) => { if (!open) { setEditingScenario(null); setEditForm(null); } }}>
@@ -318,7 +358,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <div className="w-1.5 h-4 bg-black rounded-full" />
                     Ventes individuelles
                   </h4>
-                  {/* Mobile: 1 col full-width. Desktop: 2 cols */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {lots.filter(l => !groupedLotIds.has(l.id)).map((lot: any) => (
                       <div key={lot.id} className="flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all min-w-0">
@@ -326,7 +365,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                           <span className="text-sm font-bold truncate">{lot.name}</span>
                           <span className="text-xs text-gray-400">{lot.surface} m²</span>
                         </div>
-                        {/* Prix input — plus large sur mobile */}
                         <div className="relative w-32 sm:w-28 flex-shrink-0">
                           <Input
                             type="number"
