@@ -216,6 +216,9 @@ importers:
       vite:
         specifier: ^6.3.4
         version: 6.3.4(@types/node@22.14.1)(jiti@1.21.7)(yaml@2.7.1)
+            '@svgr/rollup':
+                  specifier: ^8.1.0
+                        version: 8.1.0
 
 packages:
 
