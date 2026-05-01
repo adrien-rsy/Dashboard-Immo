@@ -4,8 +4,6 @@ import React from 'react';
 import { Settings, LogOut, Building2, Search as SearchIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from 'react-router-dom';
-// @ts-ignore
-import Logo from '@/assets/logo.svg?react';
 
 const Sidebar = ({ className }: { className?: string }) => {
   const navigate = useNavigate();
@@ -22,7 +20,21 @@ const Sidebar = ({ className }: { className?: string }) => {
         className="flex items-center mb-10 px-2 cursor-pointer"
         onClick={() => navigate('/projects')}
       >
-        <Logo className="h-12 w-auto" />
+        <img
+          src="/logo.svg"
+          alt="Groupe Roussey"
+          className="h-12 w-auto"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.removeAttribute('style');
+          }}
+        />
+        <span
+          style={{ display: 'none' }}
+          className="text-xl font-bold text-gray-900 tracking-tight"
+        >
+          Groupe Roussey
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -56,11 +68,11 @@ const Sidebar = ({ className }: { className?: string }) => {
       <div className="mt-auto pt-6 border-t border-gray-100 space-y-1">
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-black transition-all duration-200">
           <Settings className="w-5 h-5 text-gray-400" />
-          <span className="text-sm">Paramètres</span>
+          <span className="text-sm">Param&#232;tres</span>
         </button>
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200">
           <LogOut className="w-5 h-5" />
-          <span className="text-sm font-medium">Déconnexion</span>
+          <span className="text-sm font-medium">D&#233;connexion</span>
         </button>
       </div>
     </div>
