@@ -21,14 +21,12 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
-      <div className="flex items-center gap-3 mb-10 px-2 cursor-pointer" onClick={() => navigate('/projects')}>
-        <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10">
-          <Building2 className="text-white w-6 h-6" />
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-lg leading-none tracking-tight">ImmoFlow</span>
-          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-1">Marchand de Biens</span>
-        </div>
+      <div className="flex items-center mb-10 px-2 cursor-pointer" onClick={() => navigate('/projects')}>
+        <img
+          src="/Logo-Groupe-Roussey.jpg"
+          alt="Groupe Roussey"
+          className="h-10 w-auto object-contain"
+        />
       </div>
 
       <nav className="flex-1 space-y-1">
