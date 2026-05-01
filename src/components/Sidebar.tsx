@@ -23,7 +23,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         <img
           src="/logo.svg"
           alt="Groupe Roussey"
-          className="h-16 w-auto"
+          style={{ height: '120px', width: 'auto' }}
           onError={(e) => {
             e.currentTarget.style.display = 'none';
             e.currentTarget.nextElementSibling?.removeAttribute('style');
