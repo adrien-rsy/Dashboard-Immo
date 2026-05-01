@@ -8,6 +8,7 @@ import ProjectKPIs from '@/components/ProjectKPIs';
 import LotsTable from '@/components/LotsTable';
 import SalesScenarios from '@/components/SalesScenarios';
 import CostBreakdown from '@/components/CostBreakdown';
+import ExportPdfDialog from '@/components/ExportPdfDialog';
 import { MapPin, Calendar, Info, Download, Briefcase, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import {
@@ -38,6 +39,7 @@ const ProjectDashboard = () => {
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [editProjectForm, setEditProjectForm] = useState<any>(null);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+  const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -216,7 +218,10 @@ const ProjectDashboard = () => {
               <button onClick={() => setIsDescriptionOpen(true)} className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
                 <Info className="w-5 h-5" />
               </button>
-              <button className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600">
+              <button
+                onClick={() => setIsExportPdfOpen(true)}
+                className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-gray-600"
+              >
                 <Download className="w-5 h-5" />
               </button>
               <button 
@@ -295,7 +300,6 @@ const ProjectDashboard = () => {
                     prices: { ...l.prices, [id]: l.prices[sourceId] }
                   }));
 
-                  // Copier les valeurs des coûts globaux pour le nouveau scénario
                   const updatedCosts = project.costs.map((c: any) => {
                     if (c.isGlobal) {
                       return { ...c, values: { ...c.values, [id]: c.values[sourceId] ?? 0 } };
@@ -303,7 +307,6 @@ const ProjectDashboard = () => {
                     return c;
                   });
 
-                  // Dupliquer les coûts spécifiques au scénario source en nouvelles entrées
                   const specificCosts = project.costs.filter(
                     (c: any) => !c.isGlobal && c.targetScenarioId === sourceId
                   );
@@ -338,6 +341,17 @@ const ProjectDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Export PDF dialog */}
+      {project && (
+        <ExportPdfDialog
+          open={isExportPdfOpen}
+          onOpenChange={setIsExportPdfOpen}
+          project={project}
+          scenarios={project.scenarios || []}
+          calculateTotals={calculateTotals}
+        />
+      )}
 
       {/* Edit project dialog */}
       <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
@@ -399,6 +413,7 @@ const ProjectDashboard = () => {
                         <SelectItem value="Sous compromis">Sous compromis</SelectItem>
                         <SelectItem value="Acté">Acté</SelectItem>
                       </SelectContent>
+
                     </Select>
                   </div>
                 </div>
