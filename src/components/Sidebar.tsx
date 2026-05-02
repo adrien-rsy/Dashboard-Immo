@@ -17,7 +17,7 @@ const Sidebar = ({ className }: { className?: string }) => {
   return (
     <div className={cn("w-64 h-full bg-white flex flex-col p-6", className)}>
       <div
-        className="flex items-center mb-10 px-2 cursor-pointer"
+        className="flex items-center justify-center mb-10 cursor-pointer w-full"
         onClick={() => navigate('/projects')}
       >
         <img
