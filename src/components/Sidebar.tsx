@@ -21,7 +21,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         onClick={() => navigate('/projects')}
       >
         <img
-          src="/logo.svg"
+          src="/logo.png"
           alt="Groupe Roussey"
           style={{ height: '120px', width: 'auto' }}
           onError={(e) => {
