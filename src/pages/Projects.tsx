@@ -25,6 +25,8 @@ import { showSuccess, showError } from '@/utils/toast';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
+const CACHE_KEY = 'immo_projects_v9';
+
 const INITIAL_SCENARIOS = [
   { id: 'pessimistic', name: 'Pessimiste', description: 'Hypothèse prudente.', icon: 'TrendingDown', isDefault: false, duration: 18, groupedSales: [], apport: 50000, interestRate: 4.5, agenceRate: 5, isNotaireReduced: false },
   { id: 'realistic', name: 'Réaliste', description: 'Scénario de marché.', icon: 'Zap', isDefault: true, duration: 14, groupedSales: [], apport: 80000, interestRate: 4.0, agenceRate: 5, isNotaireReduced: false },
@@ -39,10 +41,44 @@ const DEFAULT_COSTS = [
   { id: 'finance', label: "Frais financiers", category: "Finance", isGlobal: true, type: 'finance', values: {} },
 ];
 
+// Skeleton d'une card projet
+const ProjectCardSkeleton = () => (
+  <div className="bg-white rounded-[2.5rem] p-8 shadow-sm">
+    <div className="flex items-center gap-4 mb-6">
+      <div className="w-14 h-14 bg-gray-100 rounded-2xl animate-pulse" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-16 bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-5 w-40 bg-gray-100 rounded-full animate-pulse" />
+      </div>
+    </div>
+    <div className="space-y-3 mb-8">
+      <div className="h-4 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+      <div className="h-4 w-1/2 bg-gray-100 rounded-full animate-pulse" />
+    </div>
+    <div className="pt-6 border-t border-gray-50">
+      <div className="h-4 w-32 bg-gray-100 rounded-full animate-pulse" />
+    </div>
+  </div>
+);
+
 const Projects = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Initialisation directe depuis le cache — pas d'écran vide
+  const [projects, setProjects] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // true uniquement si le cache était vide (première visite)
+  const [isFirstLoad, setIsFirstLoad] = useState(() => {
+    return !localStorage.getItem(CACHE_KEY);
+  });
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -50,7 +86,7 @@ const Projects = () => {
     title: '',
     address: '',
     startDate: new Date().toISOString().split('T')[0],
-    status: 'A l\'étude',
+    status: "A l'\u00e9tude",
     description: '',
     acqPrice: '',
     travauxPrice: '',
@@ -71,9 +107,8 @@ const Projects = () => {
 
   const fetchProjects = async () => {
     if (!isSupabaseConfigured()) {
-      const saved = localStorage.getItem('immo_projects_v9');
-      if (saved) setProjects(JSON.parse(saved));
-      setLoading(false);
+      // Déjà chargé depuis le cache dans useState
+      setIsFirstLoad(false);
       return;
     }
 
@@ -84,13 +119,16 @@ const Projects = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProjects(data || []);
+
+      const fresh = data || [];
+      setProjects(fresh);
+      // Mise à jour silencieuse du cache
+      localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
     } catch (error) {
       console.error('Error fetching projects:', error);
-      const saved = localStorage.getItem('immo_projects_v9');
-      if (saved) setProjects(JSON.parse(saved));
+      // En cas d'erreur, le cache affiché reste en place
     } finally {
-      setLoading(false);
+      setIsFirstLoad(false);
     }
   };
 
@@ -124,7 +162,7 @@ const Projects = () => {
       const id = `project_${Date.now()}`;
       const updated = [{ id, ...projectData }, ...projects];
       setProjects(updated);
-      localStorage.setItem('immo_projects_v9', JSON.stringify(updated));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
       setIsCreateOpen(false);
       showSuccess("Projet créé avec succès (Local)");
       navigate(`/project/${id}`);
@@ -139,7 +177,9 @@ const Projects = () => {
 
       if (error) throw error;
 
-      setProjects([data[0], ...projects]);
+      const updated = [data[0], ...projects];
+      setProjects(updated);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
       setIsCreateOpen(false);
       showSuccess("Projet créé avec succès");
       navigate(`/project/${data[0].id}`);
@@ -156,7 +196,7 @@ const Projects = () => {
     if (!isSupabaseConfigured()) {
       const updated = projects.filter(p => p.id !== id);
       setProjects(updated);
-      localStorage.setItem('immo_projects_v9', JSON.stringify(updated));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
       showSuccess("Projet supprimé (Local)");
       return;
     }
@@ -169,13 +209,19 @@ const Projects = () => {
 
       if (error) throw error;
 
-      setProjects(projects.filter(p => p.id !== id));
+      const updated = projects.filter(p => p.id !== id);
+      setProjects(updated);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
       showSuccess("Projet supprimé");
     } catch (error) {
       console.error('Error deleting project:', error);
       showError("Erreur lors de la suppression");
     }
   };
+
+  const filteredProjects = projects.filter(p =>
+    p.metadata?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen bg-[#F4F5F7] text-gray-900 font-sans overflow-hidden">
@@ -194,27 +240,40 @@ const Projects = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {projects.filter(p => p.metadata.title.toLowerCase().includes(searchTerm.toLowerCase())).map((project) => (
-              <div key={project.id} onClick={() => navigate(`/project/${project.id}`)} className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-gray-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => deleteProject(e, project.id)} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"><Trash2 className="w-4 h-4" /></button>
+            {isFirstLoad ? (
+              // Première visite : afficher 3 skeletons le temps du chargement initial
+              Array.from({ length: 3 }).map((_, i) => <ProjectCardSkeleton key={i} />)
+            ) : filteredProjects.length === 0 ? (
+              <div className="col-span-3 flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                  <Building2 className="w-8 h-8 text-gray-300" />
                 </div>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors"><Building2 className="w-7 h-7" /></div>
-                  <div>
-                    <span className="px-2 py-0.5 bg-gray-100 text-[8px] font-black uppercase tracking-widest rounded-full text-gray-500 mb-1 inline-block">{project.metadata.status}</span>
-                    <h3 className="text-xl font-bold leading-tight">{project.metadata.title}</h3>
+                <p className="text-gray-400 font-bold">Aucun projet pour l'instant</p>
+                <p className="text-sm text-gray-300 mt-1">Créez votre premier projet pour commencer</p>
+              </div>
+            ) : (
+              filteredProjects.map((project) => (
+                <div key={project.id} onClick={() => navigate(`/project/${project.id}`)} className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-gray-100 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={(e) => deleteProject(e, project.id)} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors"><Building2 className="w-7 h-7" /></div>
+                    <div>
+                      <span className="px-2 py-0.5 bg-gray-100 text-[8px] font-black uppercase tracking-widest rounded-full text-gray-500 mb-1 inline-block">{project.metadata.status}</span>
+                      <h3 className="text-xl font-bold leading-tight">{project.metadata.title}</h3>
+                    </div>
+                  </div>
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-sm text-gray-500"><MapPin className="w-4 h-4 shrink-0" /><span className="truncate">{project.metadata.address}</span></div>
+                    <div className="flex items-center gap-3 text-sm text-gray-500"><Calendar className="w-4 h-4 shrink-0" /><span>Début : {new Date(project.metadata.startDate).toLocaleDateString('fr-FR')}</span></div>
+                  </div>
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                    <div className="flex items-center gap-2 text-sm font-bold group-hover:translate-x-1 transition-transform">Ouvrir le dashboard <ArrowRight className="w-4 h-4" /></div>
                   </div>
                 </div>
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3 text-sm text-gray-500"><MapPin className="w-4 h-4 shrink-0" /><span className="truncate">{project.metadata.address}</span></div>
-                  <div className="flex items-center gap-3 text-sm text-gray-500"><Calendar className="w-4 h-4 shrink-0" /><span>Début : {new Date(project.metadata.startDate).toLocaleDateString('fr-FR')}</span></div>
-                </div>
-                <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                  <div className="flex items-center gap-2 text-sm font-bold group-hover:translate-x-1 transition-transform">Ouvrir le dashboard <ArrowRight className="w-4 h-4" /></div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </main>
