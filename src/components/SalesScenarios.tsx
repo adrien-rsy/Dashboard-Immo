@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Zap, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle, Star } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -122,17 +128,16 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     return Math.round(financed * (innerEditingCost.duration || 0) * ((innerEditingCost.interestRate || 0) / 100 / 12));
   };
 
-  // Calcul du total des coûts cohérent avec l'affichage ligne par ligne (hors frais financiers)
+  // Calcul total cohérent avec l'affichage ligne par ligne (hors frais financiers)
   const computeTotalCosts = (form: any) => {
     if (!form) return 0;
     const acq = form.costValues['acq'] || 0;
     const isReduced = form.metadata?.isNotaireReduced;
     const agenceRate = form.metadata?.agenceRate || 0;
-
     return costs
       .filter((c: any) => c.isGlobal || c.targetScenarioId === editingScenario?.id)
       .reduce((acc: number, cost: any) => {
-        if (cost.type === 'finance') return acc; // frais financiers exclus du budget opérationnel
+        if (cost.type === 'finance') return acc;
         if (cost.type === 'notaire') return acc + Math.round(acq * (isReduced ? 0.03 : 0.08));
         if (cost.type === 'agence') return acc + Math.round(acq * (agenceRate / 100));
         return acc + (form.costValues[cost.id] || 0);
@@ -158,70 +163,55 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           const Icon = s.icon === 'TrendingDown' ? TrendingDown : s.icon === 'TrendingUp' ? TrendingUp : Zap;
           const isPositive = profitability >= 0;
           return (
-            <div
-              key={s.id}
-              className={cn(
-                "p-6 rounded-3xl border-2 transition-all duration-300 relative group cursor-pointer",
-                s.isDefault ? "border-black bg-gray-50/50 scale-[1.02]" : "border-gray-50 hover:border-gray-200"
-              )}
-              onClick={() => handleOpenEdit(s)}
-            >
-              {/* Actions : boutons directs pour éviter les problèmes mobile avec DropdownMenu */}
-              <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {!s.isDefault && (
-                  <button
-                    title="Définir par défaut"
-                    className="p-1.5 hover:bg-yellow-50 rounded-lg text-gray-400 hover:text-yellow-500 transition-colors"
-                    onClick={(e) => { e.stopPropagation(); onSetDefault(s.id); }}
-                  >
-                    <Star className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  title="Dupliquer"
-                  className="p-1.5 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onDuplicateScenario(s.id); }}
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  title="Supprimer"
-                  className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
-                  onClick={(e) => { e.stopPropagation(); setScenarioToDelete(s); }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Sur mobile : boutons toujours visibles en bas de card */}
-              <div className="flex items-center gap-2 mt-4 md:hidden">
-                {!s.isDefault && (
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl text-[11px] font-bold border border-gray-100 active:scale-95 transition-all"
-                    onClick={(e) => { e.stopPropagation(); onSetDefault(s.id); }}
-                  >
-                    <Star className="w-3 h-3" /> Définir actif
-                  </button>
-                )}
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl text-[11px] font-bold border border-gray-100 active:scale-95 transition-all"
-                  onClick={(e) => { e.stopPropagation(); onDuplicateScenario(s.id); }}
-                >
-                  <Copy className="w-3 h-3" /> Dupliquer
-                </button>
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-500 rounded-xl text-[11px] font-bold border border-red-100 active:scale-95 transition-all"
-                  onClick={(e) => { e.stopPropagation(); setScenarioToDelete(s); }}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className={cn("p-2 rounded-xl", s.id === 'pessimistic' ? "bg-red-50 text-red-500" : s.id === 'optimistic' ? "bg-green-50 text-green-500" : "bg-blue-50 text-blue-500")}>
-                  <Icon className="w-5 h-5" />
+            <div key={s.id} onClick={() => handleOpenEdit(s)} className={cn("p-6 rounded-3xl border-2 transition-all duration-300 relative group cursor-pointer", s.isDefault ? "border-black bg-gray-50/50 scale-[1.02]" : "border-gray-50 hover:border-gray-200")}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={cn("p-2 rounded-xl", s.id === 'pessimistic' ? "bg-red-50 text-red-500" : s.id === 'optimistic' ? "bg-green-50 text-green-500" : "bg-blue-50 text-blue-500")}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="font-bold text-sm">{s.name}</span>
                 </div>
-                <span className="font-bold text-sm">{s.name}</span>
+
+                {/* DropdownMenu — stopPropagation sur le trigger pour ne pas ouvrir le dialog */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="p-1.5 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="rounded-xl">
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setTimeout(() => onDuplicateScenario(s.id), 0);
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />Dupliquer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setTimeout(() => onSetDefault(s.id), 0);
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />Définir par défaut
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600 cursor-pointer"
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setTimeout(() => setScenarioToDelete(s), 0);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />Supprimer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <div className="space-y-4">
@@ -310,7 +300,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
 
               <div className="px-4 sm:px-8 py-5 sm:py-6 space-y-8 sm:space-y-10 w-full min-w-0 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain">
 
-                {/* Nom */}
                 <div className="w-full min-w-0">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-gray-400">Nom du scénario</Label>
@@ -323,7 +312,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   </div>
                 </div>
 
-                {/* Groupes de vente */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black flex items-center gap-2">
@@ -396,7 +384,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   )}
                 </div>
 
-                {/* Ventes individuelles */}
                 <div>
                   <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black mb-4 flex items-center gap-2">
                     <div className="w-1.5 h-4 bg-black rounded-full" />
@@ -424,7 +411,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   </div>
                 </div>
 
-                {/* Structure des coûts */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-sm font-black uppercase tracking-wide sm:tracking-widest text-black flex items-center gap-2">
@@ -495,7 +481,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       );
                     })}
 
-                    {/* Total coûts — cohérent avec les lignes affichées, hors frais financiers */}
+                    {/* Total coûts — même logique que l'affichage par ligne */}
                     <div className="flex items-center justify-between gap-4 p-5 bg-white border border-gray-100 rounded-[2rem] mt-2 shadow-sm">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Coût total</p>
@@ -524,7 +510,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         </DialogContent>
       </Dialog>
 
-      {/* Inner Cost Edit Dialog */}
       {innerEditingCost && (
         <Dialog open={!!innerEditingCost} onOpenChange={(open) => !open && setInnerEditingCost(null)}>
           <DialogContent className="w-[calc(100%-2rem)] rounded-2xl p-4 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain z-[100] sm:max-w-[425px] sm:w-auto sm:rounded-[2rem] sm:max-h-[90vh] sm:p-6">
