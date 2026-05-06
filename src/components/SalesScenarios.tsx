@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
@@ -36,12 +36,23 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
   const [innerEditingCost, setInnerEditingCost] = useState<any>(null);
   const [scenarioToDelete, setScenarioToDelete] = useState<any>(null);
 
+  // Flag pour bloquer l'ouverture du dialogue quand une action menu vient d'être déclenchée
+  const menuActionFiredRef = useRef(false);
+
   useEffect(() => {
     const lastScenario = scenarios[scenarios.length - 1];
     if (lastScenario && lastScenario.id.startsWith('scenario_') && !editingScenario && (Date.now() - parseInt(lastScenario.id.split('_')[1])) < 2000) {
       handleOpenEdit(lastScenario);
     }
   }, [scenarios.length]);
+
+  const handleCardClick = (scenario: any) => {
+    if (menuActionFiredRef.current) {
+      menuActionFiredRef.current = false;
+      return;
+    }
+    handleOpenEdit(scenario);
+  };
 
   const handleOpenEdit = (scenario: any) => {
     setEditingScenario(scenario);
@@ -128,7 +139,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     return Math.round(financed * (innerEditingCost.duration || 0) * ((innerEditingCost.interestRate || 0) / 100 / 12));
   };
 
-  // Calcul total cohérent avec l'affichage ligne par ligne (hors frais financiers)
   const computeTotalCosts = (form: any) => {
     if (!form) return 0;
     const acq = form.costValues['acq'] || 0;
@@ -163,7 +173,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
           const Icon = s.icon === 'TrendingDown' ? TrendingDown : s.icon === 'TrendingUp' ? TrendingUp : Zap;
           const isPositive = profitability >= 0;
           return (
-            <div key={s.id} onClick={() => handleOpenEdit(s)} className={cn("p-6 rounded-3xl border-2 transition-all duration-300 relative group cursor-pointer", s.isDefault ? "border-black bg-gray-50/50 scale-[1.02]" : "border-gray-50 hover:border-gray-200")}>
+            <div
+              key={s.id}
+              onClick={() => handleCardClick(s)}
+              className={cn("p-6 rounded-3xl border-2 transition-all duration-300 relative group cursor-pointer", s.isDefault ? "border-black bg-gray-50/50 scale-[1.02]" : "border-gray-50 hover:border-gray-200")}
+            >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2 rounded-xl", s.id === 'pessimistic' ? "bg-red-50 text-red-500" : s.id === 'optimistic' ? "bg-green-50 text-green-500" : "bg-blue-50 text-blue-500")}>
@@ -172,12 +186,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   <span className="font-bold text-sm">{s.name}</span>
                 </div>
 
-                {/* DropdownMenu — stopPropagation sur le trigger pour ne pas ouvrir le dialog */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       className="p-1.5 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
@@ -185,27 +198,33 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   <DropdownMenuContent align="end" className="rounded-xl">
                     <DropdownMenuItem
                       className="cursor-pointer"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onSelect={(e) => {
                         e.preventDefault();
-                        setTimeout(() => onDuplicateScenario(s.id), 0);
+                        menuActionFiredRef.current = true;
+                        onDuplicateScenario(s.id);
                       }}
                     >
                       <Copy className="w-4 h-4 mr-2" />Dupliquer
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="cursor-pointer"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onSelect={(e) => {
                         e.preventDefault();
-                        setTimeout(() => onSetDefault(s.id), 0);
+                        menuActionFiredRef.current = true;
+                        onSetDefault(s.id);
                       }}
                     >
                       <Check className="w-4 h-4 mr-2" />Définir par défaut
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-red-600 cursor-pointer"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onSelect={(e) => {
                         e.preventDefault();
-                        setTimeout(() => setScenarioToDelete(s), 0);
+                        menuActionFiredRef.current = true;
+                        setScenarioToDelete(s);
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />Supprimer
@@ -239,7 +258,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         })}
       </div>
 
-      {/* Confirmation suppression scénario */}
+      {/* Confirmation suppression */}
       <Dialog open={!!scenarioToDelete} onOpenChange={(open) => { if (!open) setScenarioToDelete(null); }}>
         <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[400px] rounded-2xl sm:rounded-[2rem] p-0 border-none shadow-2xl">
           <div className="p-8 space-y-6">
@@ -481,7 +500,6 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       );
                     })}
 
-                    {/* Total coûts — même logique que l'affichage par ligne */}
                     <div className="flex items-center justify-between gap-4 p-5 bg-white border border-gray-100 rounded-[2rem] mt-2 shadow-sm">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Coût total</p>
