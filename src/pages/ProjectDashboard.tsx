@@ -114,6 +114,32 @@ const ProjectDashboard = () => {
     }
   };
 
+  // Persistance en arrière-plan sans bloquer l'UI
+  const persistProjectBackground = async (updatedProject: any) => {
+    if (!isSupabaseConfigured()) {
+      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
+      localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          metadata: updatedProject.metadata,
+          lots: updatedProject.lots,
+          scenarios: updatedProject.scenarios,
+          costs: updatedProject.costs
+        })
+        .eq('id', updatedProject.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error persisting project:', error);
+    }
+  };
+
   const handleUpdateProjectMetadata = () => {
     const updated = { ...project, metadata: editProjectForm };
     saveProject(updated);
@@ -274,7 +300,12 @@ const ProjectDashboard = () => {
                   saveProject({ ...project, scenarios: newScenarios });
                 }}
                 onSetDefault={(id: string) => {
-                  saveProject({ ...project, scenarios: project.scenarios.map((s: any) => ({ ...s, isDefault: s.id === id })) });
+                  // Optimistic update : mise à jour locale instantanée
+                  const updatedScenarios = project.scenarios.map((s: any) => ({ ...s, isDefault: s.id === id }));
+                  const optimisticProject = { ...project, scenarios: updatedScenarios };
+                  setProject(optimisticProject);
+                  // Persistance en arrière-plan (sans bloquer l'UI)
+                  persistProjectBackground(optimisticProject);
                 }}
                 onAddScenario={() => {
                   const id = `scenario_${Date.now()}`;
