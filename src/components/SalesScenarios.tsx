@@ -199,8 +199,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <DropdownMenuItem
                       className="cursor-pointer"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onSelect={(e) => {
-                        e.preventDefault();
+                      onSelect={() => {
                         menuActionFiredRef.current = true;
                         onDuplicateScenario(s.id);
                       }}
@@ -210,8 +209,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <DropdownMenuItem
                       className="cursor-pointer"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onSelect={(e) => {
-                        e.preventDefault();
+                      onSelect={() => {
                         menuActionFiredRef.current = true;
                         onSetDefault(s.id);
                       }}
@@ -221,8 +219,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                     <DropdownMenuItem
                       className="text-red-600 cursor-pointer"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onSelect={(e) => {
-                        e.preventDefault();
+                      onSelect={() => {
                         menuActionFiredRef.current = true;
                         setScenarioToDelete(s);
                       }}
