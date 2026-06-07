@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Settings, LogOut, Building2, Search as SearchIcon } from 'lucide-react';
+import { Settings, LogOut, Building2, Search as SearchIcon, TrendingUp } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ const Sidebar = ({ className }: { className?: string }) => {
   const navItems = [
     { icon: Building2, label: 'Mes Projets', path: '/projects' },
     { icon: SearchIcon, label: 'Prospection', path: '/prospection' },
+    { icon: TrendingUp, label: 'Finance', path: '/finance' },
   ];
 
   return (
