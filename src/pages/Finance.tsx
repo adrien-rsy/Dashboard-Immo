@@ -25,13 +25,13 @@ function KpiCard({ title, value, sub, variant = 'light', onClick, clickable }: K
     <div
       onClick={onClick}
       className={[
-        'p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-all duration-300 hover:shadow-lg',
+        'p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-all duration-300 hover:shadow-lg overflow-hidden min-w-0',
         isDark ? 'bg-black text-white' : 'bg-white text-black',
         clickable ? 'cursor-pointer active:scale-[0.98]' : '',
       ].join(' ')}
     >
-      <p className={`text-xs md:text-sm mb-3 md:mb-4 ${ isDark ? 'text-gray-400' : 'text-gray-500' }`}>{title}</p>
-      <h3 className="text-2xl md:text-3xl font-black tabular-nums mb-3 md:mb-4 leading-none">{value}</h3>
+      <p className={`text-xs md:text-sm mb-3 md:mb-4 truncate ${ isDark ? 'text-gray-400' : 'text-gray-500' }`}>{title}</p>
+      <h3 className="text-2xl md:text-3xl font-black tabular-nums mb-3 md:mb-4 leading-none truncate">{value}</h3>
       {sub && <div className="flex items-center gap-2 flex-wrap">{sub}</div>}
       {clickable && !sub && (
         <p className={`text-xs mt-2 ${ isDark ? 'text-gray-500' : 'text-gray-400' }`}>Appuyer pour définir</p>
@@ -50,7 +50,7 @@ function DeltaBadge({ value, isDark }: { value: number; isDark?: boolean }) {
     : (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-50 text-red-600');
   const Icon = isFlat ? Minus : isUp ? TrendingUp : TrendingDown;
   return (
-    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${color}`}>
+    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shrink-0 ${color}`}>
       <Icon className="w-3 h-3" />
       <span>{isFlat ? '—' : `${isUp ? '+' : ''}${value.toFixed(1)}%`}</span>
     </div>
@@ -109,21 +109,21 @@ export default function Finance() {
     <div className="flex h-screen bg-[#F4F5F7] text-gray-900 font-sans overflow-hidden">
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
 
-      <main className="flex-1 flex flex-col min-h-0">
+      {/* overflow-x:hidden empêche tout enfant (TopBar, SyncIndicator, cartes) de pousser la largeur */}
+      <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden">
         <TopBar />
-        <div className="flex-1 overflow-y-auto">
-          {/* Conteneur central avec marges latérales uniformes */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 py-6 pb-24 md:pb-12">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10 md:mt-6">
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1">Finance</h1>
                 <p className="text-sm text-gray-500">Suivi de votre patrimoine personnel</p>
               </div>
               <button
                 onClick={() => { setReleveToEdit(null); setAddOpen(true); }}
-                className="flex items-center justify-center gap-2 px-5 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all active:scale-[0.98] text-sm w-full sm:w-auto shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 {last ? 'Mettre à jour' : 'Ajouter un relevé'}
@@ -137,7 +137,7 @@ export default function Finance() {
             ) : (
               <div className="space-y-4">
 
-                {/* KPIs : 1 col mobile, 2 col sm, 4 col xl */}
+                {/* KPIs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                   <KpiCard
                     variant="dark"
@@ -145,7 +145,7 @@ export default function Finance() {
                     value={last ? formatEuro(lastTotal) : '—'}
                     sub={
                       last && prev ? (
-                        <><DeltaBadge value={deltaPct} isDark /><span className="text-xs text-gray-500">vs mois préc.</span></>
+                        <><DeltaBadge value={deltaPct} isDark /><span className="text-xs text-gray-500 truncate">vs mois préc.</span></>
                       ) : last ? (
                         <span className="text-xs text-gray-500">Premier relevé</span>
                       ) : (
@@ -167,7 +167,7 @@ export default function Finance() {
                     value={prev ? `${deltaEuro >= 0 ? '+' : ''}${formatEuro(deltaEuro)}` : '—'}
                     sub={
                       prev ? (
-                        <><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400">depuis le préc.</span></>
+                        <><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400 truncate">depuis le préc.</span></>
                       ) : (
                         <span className="text-xs text-gray-400">Pas encore de comparaison</span>
                       )
@@ -180,7 +180,7 @@ export default function Finance() {
                         ? remainingToGoal <= 0 ? '🎯 Atteint' : formatEuro(remainingToGoal)
                         : 'Définir →'
                     }
-                    sub={objectif ? <span className="text-xs text-gray-400">Objectif : {formatEuro(objectif.montant)}</span> : undefined}
+                    sub={objectif ? <span className="text-xs text-gray-400 truncate">Objectif : {formatEuro(objectif.montant)}</span> : undefined}
                     clickable
                     onClick={() => setObjectifOpen(true)}
                   />
@@ -234,7 +234,7 @@ export default function Finance() {
                             onClick={() => openEdit(r)}
                             className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 md:px-5 py-4 group cursor-pointer hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className={`w-2 h-2 rounded-full shrink-0 ${ idx === 0 ? 'bg-black' : 'bg-gray-300' }`} />
                               <div className="min-w-0">
                                 <p className="text-sm font-bold truncate">
