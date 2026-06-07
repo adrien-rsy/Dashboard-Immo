@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import React, { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Releve, LigneCompte, CategorieFinance, CATEGORIES } from '@/types/finance';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   lastReleve: Releve | null;
-  /** Quand fourni, la modale passe en mode édition de ce relevé */
   releveToEdit?: Releve | null;
   onSave: (releve: Omit<Releve, 'id'>) => void;
-  /** Appelé uniquement en mode édition */
   onUpdate?: (id: string, releve: Omit<Releve, 'id'>) => void;
 }
 
@@ -22,14 +20,10 @@ function newLigne(cat: CategorieFinance = 'Cash'): LigneCompte {
 }
 
 export default function AddReleveDialog({
-  open,
-  onOpenChange,
-  lastReleve,
-  releveToEdit,
-  onSave,
-  onUpdate,
+  open, onOpenChange, lastReleve, releveToEdit, onSave, onUpdate,
 }: Props) {
   const isEdit = !!releveToEdit;
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
@@ -37,45 +31,36 @@ export default function AddReleveDialog({
 
   useEffect(() => {
     if (!open) return;
-
     if (isEdit && releveToEdit) {
-      // Mode édition : on charge exactement le relevé existant
       setDate(releveToEdit.date);
       setNote(releveToEdit.note ?? '');
       setLignes(releveToEdit.lignes.map(l => ({ ...l })));
     } else {
-      // Mode création : date du jour, pré-remplissage du dernier relevé
       setDate(new Date().toISOString().split('T')[0]);
       setNote('');
-      if (lastReleve && lastReleve.lignes.length > 0) {
-        setLignes(lastReleve.lignes.map(l => ({ ...l, id: `l_${Date.now()}_${Math.random()}` })));
-      } else {
-        setLignes([newLigne()]);
-      }
+      setLignes(
+        lastReleve?.lignes.length
+          ? lastReleve.lignes.map(l => ({ ...l, id: `l_${Date.now()}_${Math.random()}` }))
+          : [newLigne()]
+      );
     }
+    // Empêche l'ouverture automatique du picker de date sur mobile
+    setTimeout(() => { dateInputRef.current?.blur(); }, 50);
   }, [open, releveToEdit, isEdit]);
 
-  const updateLigne = (id: string, field: keyof LigneCompte, value: any) => {
+  const updateLigne = (id: string, field: keyof LigneCompte, value: any) =>
     setLignes(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
-  };
-
-  const removeLigne = (id: string) => {
+  const removeLigne = (id: string) =>
     setLignes(prev => prev.filter(l => l.id !== id));
-  };
-
-  const addLigne = () => {
+  const addLigne = () =>
     setLignes(prev => [...prev, newLigne()]);
-  };
 
   const handleSave = () => {
     const cleanLignes = lignes.filter(l => l.nom.trim() !== '');
     if (cleanLignes.length === 0) return;
     const payload = { date, lignes: cleanLignes, note: note.trim() || undefined };
-    if (isEdit && releveToEdit && onUpdate) {
-      onUpdate(releveToEdit.id, payload);
-    } else {
-      onSave(payload);
-    }
+    if (isEdit && releveToEdit && onUpdate) onUpdate(releveToEdit.id, payload);
+    else onSave(payload);
     onOpenChange(false);
   };
 
@@ -83,34 +68,70 @@ export default function AddReleveDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[700px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
-        <DialogHeader className="p-8 pb-4 bg-gray-50/50 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+      {/*
+        On retire p-0 du DialogContent pour que la croix shadcn soit bien positionnée,
+        et on restructure le scroll à l'intérieur.
+      */}
+      <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl border-none shadow-2xl p-0 max-h-[92dvh] flex flex-col sm:max-w-[700px] sm:rounded-[2.5rem]">
+
+        {/* Header sticky */}
+        <DialogHeader className="px-6 pt-6 pb-4 md:px-8 md:pt-8 bg-gray-50/80 backdrop-blur-sm rounded-t-2xl sm:rounded-t-[2.5rem] shrink-0">
+          {/* Bouton fermeture explicite — visible sur toutes tailles */}
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute top-4 right-4 md:top-5 md:right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black transition-all z-20"
+            aria-label="Fermer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-3 pr-10">
             {isEdit && (
               <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center shrink-0">
                 <Pencil className="w-4 h-4 text-white" />
               </div>
             )}
             <div>
-              <DialogTitle className="text-2xl font-black">
-                {isEdit ? 'Modifier le relevé' : 'Nouveau relevé patrimonial'}
+              <DialogTitle className="text-xl md:text-2xl font-black">
+                {isEdit ? 'Modifier le relevé' : 'Nouveau relevé'}
               </DialogTitle>
               <p className="text-xs text-gray-400 mt-0.5">
                 {isEdit
-                  ? 'Modifiez les lignes, les montants ou la date de ce relevé.'
+                  ? 'Modifiez les lignes, montants ou la date.'
                   : lastReleve
-                  ? 'Les lignes du dernier relevé sont pré-remplies — ajustez les montants.'
-                  : 'Ajoutez vos comptes et leurs montants à la date choisie.'}
+                  ? 'Lignes pré-remplies depuis le dernier relevé — ajustez les montants.'
+                  : 'Ajoutez vos comptes et leurs montants.'}
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="p-8 space-y-6">
+        {/* Zone scrollable */}
+        <div className="overflow-y-auto overscroll-contain flex-1 px-6 py-5 md:px-8 md:py-6 space-y-5">
+
+          {/* Date + Note */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Date du relevé</Label>
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl" />
+              {/*
+                readOnly + onFocus blur = empêche l'ouverture auto du picker sur iOS/Android.
+                L'utilisateur peut toujours cliquer volontairement sur l'input.
+              */}
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                onFocus={e => {
+                  // Sur mobile (pointer: coarse), on blur immédiatement pour éviter l'auto-ouverture
+                  if (window.matchMedia('(pointer: coarse)').matches) {
+                    e.currentTarget.blur();
+                    // Petit délai puis re-focus pour que l'utilisateur puisse interagir normalement
+                    setTimeout(() => e.currentTarget.focus(), 100);
+                  }
+                }}
+                className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Note (optionnel)</Label>
@@ -123,8 +144,10 @@ export default function AddReleveDialog({
             </div>
           </div>
 
+          {/* Lignes */}
           <div className="space-y-3">
-            <div className="grid grid-cols-12 gap-2 px-1">
+            {/* En-têtes colonnes — masqués sur très petit écran */}
+            <div className="hidden sm:grid grid-cols-12 gap-2 px-1">
               <span className="col-span-5 text-[10px] font-bold uppercase text-gray-400">Compte</span>
               <span className="col-span-3 text-[10px] font-bold uppercase text-gray-400">Catégorie</span>
               <span className="col-span-3 text-[10px] font-bold uppercase text-gray-400">Montant (€)</span>
@@ -132,8 +155,10 @@ export default function AddReleveDialog({
             </div>
 
             {lignes.map((ligne) => (
-              <div key={ligne.id} className="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-2xl px-3 py-3">
-                <div className="col-span-5">
+              <div key={ligne.id} className="bg-gray-50 rounded-2xl p-3 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center">
+                {/* Mobile : layout vertical */}
+                <div className="sm:col-span-5">
+                  <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Compte</Label>
                   <Input
                     placeholder="Nom du compte"
                     value={ligne.nom}
@@ -141,7 +166,8 @@ export default function AddReleveDialog({
                     className="rounded-xl border-0 bg-white shadow-sm text-sm"
                   />
                 </div>
-                <div className="col-span-3">
+                <div className="sm:col-span-3">
+                  <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Catégorie</Label>
                   <Select
                     value={ligne.categorie}
                     onValueChange={val => updateLigne(ligne.id, 'categorie', val as CategorieFinance)}
@@ -150,28 +176,30 @@ export default function AddReleveDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {CATEGORIES.map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="col-span-3">
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={ligne.montant || ''}
-                    onChange={e => updateLigne(ligne.id, 'montant', Number(e.target.value))}
-                    className="rounded-xl border-0 bg-white shadow-sm text-sm font-bold tabular-nums"
-                  />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  <button
-                    onClick={() => removeLigne(ligne.id)}
-                    className="p-1.5 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex items-end gap-2 sm:contents">
+                  <div className="flex-1 sm:col-span-3">
+                    <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Montant (€)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={ligne.montant || ''}
+                      onChange={e => updateLigne(ligne.id, 'montant', Number(e.target.value))}
+                      className="rounded-xl border-0 bg-white shadow-sm text-sm font-bold tabular-nums"
+                    />
+                  </div>
+                  <div className="sm:col-span-1 flex justify-center pb-0.5 sm:pb-0">
+                    <button
+                      onClick={() => removeLigne(ligne.id)}
+                      className="p-2 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-xl transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -183,17 +211,19 @@ export default function AddReleveDialog({
               <Plus className="w-4 h-4" /> Ajouter une ligne
             </button>
           </div>
-
-          <DialogFooter className="pt-2">
-            <button
-              onClick={handleSave}
-              disabled={!canSave}
-              className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] disabled:opacity-40"
-            >
-              {isEdit ? 'Enregistrer les modifications' : 'Enregistrer le relevé'}
-            </button>
-          </DialogFooter>
         </div>
+
+        {/* Footer fixe */}
+        <div className="px-6 pb-6 md:px-8 md:pb-8 shrink-0">
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98] disabled:opacity-40"
+          >
+            {isEdit ? 'Enregistrer les modifications' : 'Enregistrer le relevé'}
+          </button>
+        </div>
+
       </DialogContent>
     </Dialog>
   );

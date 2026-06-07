@@ -24,11 +24,11 @@ function KpiCard({ title, value, sub, variant = 'light', onClick, clickable }: K
   return (
     <div
       onClick={onClick}
-      className={`p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-all duration-300 hover:shadow-lg ${
-        isDark ? 'bg-black text-white' : 'bg-white text-black'
-      } ${
-        clickable ? 'cursor-pointer active:scale-[0.98]' : ''
-      }`}
+      className={[
+        'p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-all duration-300 hover:shadow-lg',
+        isDark ? 'bg-black text-white' : 'bg-white text-black',
+        clickable ? 'cursor-pointer active:scale-[0.98]' : '',
+      ].join(' ')}
     >
       <p className={`text-xs md:text-sm mb-3 md:mb-4 ${ isDark ? 'text-gray-400' : 'text-gray-500' }`}>{title}</p>
       <h3 className="text-2xl md:text-3xl font-black tabular-nums mb-3 md:mb-4 leading-none">{value}</h3>
@@ -82,18 +82,15 @@ export default function Finance() {
     await addReleve(data);
     toast.success('Relevé enregistré');
   };
-
   const handleUpdateReleve = async (id: string, data: Omit<Releve, 'id'>) => {
     await updateReleve(id, data);
     toast.success('Relevé mis à jour');
   };
-
   const handleDeleteReleve = async (id: string) => {
     if (!confirm('Supprimer ce relevé ?')) return;
     await deleteReleve(id);
     toast.success('Relevé supprimé');
   };
-
   const handleSaveObjectif = async (obj: { montant: number; label?: string }) => {
     await saveObjectif(obj);
     toast.success('Objectif enregistré');
@@ -103,7 +100,6 @@ export default function Finance() {
     setReleveToEdit(r);
     setAddOpen(true);
   };
-
   const handleDialogClose = (v: boolean) => {
     setAddOpen(v);
     if (!v) setReleveToEdit(null);
@@ -111,16 +107,16 @@ export default function Finance() {
 
   return (
     <div className="flex h-screen bg-[#F4F5F7] text-gray-900 font-sans overflow-hidden">
-      {/* Sidebar desktop */}
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
 
       <main className="flex-1 flex flex-col min-h-0">
         <TopBar />
         <div className="flex-1 overflow-y-auto">
-          <div className="px-4 md:px-8 lg:px-10 py-6 pb-24 md:pb-12 max-w-screen-xl mx-auto">
+          {/* Conteneur central avec marges latérales uniformes */}
+          <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 py-6 pb-24 md:pb-12">
 
-            {/* ── Header ── */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10 md:mt-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10 md:mt-6">
               <div>
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1">Finance</h1>
                 <p className="text-sm text-gray-500">Suivi de votre patrimoine personnel</p>
@@ -139,19 +135,17 @@ export default function Finance() {
                 <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
               </div>
             ) : (
-              <>
-                {/* ── KPIs ── */}
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-6">
+              <div className="space-y-4">
+
+                {/* KPIs : 1 col mobile, 2 col sm, 4 col xl */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                   <KpiCard
                     variant="dark"
                     title="Patrimoine net"
                     value={last ? formatEuro(lastTotal) : '—'}
                     sub={
                       last && prev ? (
-                        <>
-                          <DeltaBadge value={deltaPct} isDark />
-                          <span className="text-xs text-gray-500">vs mois préc.</span>
-                        </>
+                        <><DeltaBadge value={deltaPct} isDark /><span className="text-xs text-gray-500">vs mois préc.</span></>
                       ) : last ? (
                         <span className="text-xs text-gray-500">Premier relevé</span>
                       ) : (
@@ -163,11 +157,9 @@ export default function Finance() {
                     title="Évolution mensuelle"
                     value={prev ? `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(2)}%` : '—'}
                     sub={
-                      prev ? (
-                        <DeltaBadge value={deltaPct} />
-                      ) : (
-                        <span className="text-xs text-gray-400">Pas encore de comparaison</span>
-                      )
+                      prev
+                        ? <DeltaBadge value={deltaPct} />
+                        : <span className="text-xs text-gray-400">Pas encore de comparaison</span>
                     }
                   />
                   <KpiCard
@@ -175,10 +167,7 @@ export default function Finance() {
                     value={prev ? `${deltaEuro >= 0 ? '+' : ''}${formatEuro(deltaEuro)}` : '—'}
                     sub={
                       prev ? (
-                        <>
-                          <DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} />
-                          <span className="text-xs text-gray-400">depuis le préc.</span>
-                        </>
+                        <><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400">depuis le préc.</span></>
                       ) : (
                         <span className="text-xs text-gray-400">Pas encore de comparaison</span>
                       )
@@ -188,34 +177,24 @@ export default function Finance() {
                     title="Remaining to goal"
                     value={
                       remainingToGoal !== null
-                        ? remainingToGoal <= 0
-                          ? '🎯 Atteint'
-                          : formatEuro(remainingToGoal)
+                        ? remainingToGoal <= 0 ? '🎯 Atteint' : formatEuro(remainingToGoal)
                         : 'Définir →'
                     }
-                    sub={
-                      objectif ? (
-                        <span className="text-xs text-gray-400">Objectif : {formatEuro(objectif.montant)}</span>
-                      ) : undefined
-                    }
+                    sub={objectif ? <span className="text-xs text-gray-400">Objectif : {formatEuro(objectif.montant)}</span> : undefined}
                     clickable
                     onClick={() => setObjectifOpen(true)}
                   />
                 </div>
 
-                {/* ── Chart ── */}
-                <div className="mb-6">
-                  <PatrimoineChart releves={releves} />
-                </div>
+                {/* Chart */}
+                <PatrimoineChart releves={releves} />
 
-                {/* ── Breakdown ── */}
-                <div className="mb-6">
-                  <PatrimoineBreakdown releve={last} />
-                </div>
+                {/* Breakdown */}
+                <PatrimoineBreakdown releve={last} />
 
-                {/* ── Historique ── */}
+                {/* Historique */}
                 <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8">
-                  <div className="flex items-center justify-between mb-5 md:mb-6">
+                  <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-3">
                       <h3 className="text-base md:text-lg font-bold">Historique</h3>
                       <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-black uppercase tracking-widest rounded-full text-gray-500">
@@ -265,10 +244,9 @@ export default function Finance() {
                                 <p className="text-xs text-gray-400">{r.lignes.length} ligne{r.lignes.length > 1 ? 's' : ''}</p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 md:gap-3 shrink-0 ml-2">
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
                               {pct !== null && <DeltaBadge value={pct} />}
                               <p className="text-sm md:text-base font-black tabular-nums">{formatEuro(total)}</p>
-                              {/* Edit icon — visible au hover desktop, toujours visible mobile */}
                               <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity p-2 bg-white rounded-xl shadow-sm">
                                 <Pencil className="w-3.5 h-3.5 text-gray-500" />
                               </div>
@@ -276,7 +254,10 @@ export default function Finance() {
                                 onClick={(e) => { e.stopPropagation(); handleDeleteReleve(r.id); }}
                                 className="md:opacity-0 md:group-hover:opacity-100 p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 transition-all"
                               >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
+                                  <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                                </svg>
                               </button>
                             </div>
                           </div>
@@ -285,7 +266,8 @@ export default function Finance() {
                     </div>
                   )}
                 </div>
-              </>
+
+              </div>
             )}
           </div>
         </div>
