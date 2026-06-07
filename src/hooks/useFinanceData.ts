@@ -18,24 +18,19 @@ function localSaveObjectif(o: ObjectifPatrimoine) {
   localStorage.setItem(LOCAL_OBJ, JSON.stringify(o));
 }
 
-// ─── helpers Supabase → types internes ────────────────────────────────────────
-
-function rowsToReleves(
-  releves: any[],
-  lignes: any[]
-): Releve[] {
-  return releves.map((r) => ({
+function rowsToReleves(relRows: any[], ligneRows: any[]): Releve[] {
+  return relRows.map((r) => ({
     id: r.id,
     date: r.date,
     note: r.note ?? undefined,
-    lignes: lignes
+    lignes: ligneRows
       .filter((l) => l.releve_id === r.id)
       .map((l) => ({
         id: l.id,
         nom: l.nom,
         categorie: l.categorie,
         montant: Number(l.montant),
-      })),
+      })) as LigneCompte[],
   }));
 }
 
@@ -43,51 +38,55 @@ export function useFinanceData() {
   const [releves, setReleves] = useState<Releve[]>([]);
   const [objectif, setObjectif] = useState<ObjectifPatrimoine | null>(null);
   const [loading, setLoading] = useState(true);
-  const [useSupabase, setUseSupabase] = useState(false);
+  // On force Supabase en priorité — si les tables existent on les utilise
+  const [mode, setMode] = useState<'supabase' | 'local' | null>(null);
 
-  // ─── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       setLoading(true);
-      try {
-        // Test Supabase connectivity
-        const { error: pingErr } = await supabase
-          .from('finance_releves')
-          .select('id')
-          .limit(1);
 
-        if (pingErr) throw pingErr;
+      // Tentative Supabase : on fait un SELECT count simple
+      const { error: testErr } = await supabase
+        .from('finance_releves')
+        .select('id', { count: 'exact', head: true });
 
-        setUseSupabase(true);
+      if (testErr) {
+        // Tables absentes ou RLS bloquant → fallback local
+        console.warn('[Finance] Supabase indisponible, mode localStorage', testErr.message);
+        setMode('local');
+        setReleves(localLoadReleves());
+        setObjectif(localLoadObjectif());
+        setLoading(false);
+        return;
+      }
 
-        // Load releves + lignes
-        const [{ data: rData }, { data: lData }, { data: oData }] = await Promise.all([
+      // Supabase OK → chargement complet
+      setMode('supabase');
+
+      const [{ data: rData, error: rErr }, { data: lData, error: lErr }, { data: oData }] =
+        await Promise.all([
           supabase.from('finance_releves').select('*').order('date', { ascending: false }),
           supabase.from('finance_lignes').select('*'),
           supabase.from('finance_objectif').select('*').limit(1).maybeSingle(),
         ]);
 
-        setReleves(rowsToReleves(rData ?? [], lData ?? []));
-        if (oData) setObjectif({ montant: Number(oData.montant), label: oData.label ?? undefined });
-        else setObjectif(localLoadObjectif());
-      } catch {
-        // Fallback localStorage
-        setUseSupabase(false);
-        setReleves(localLoadReleves());
-        setObjectif(localLoadObjectif());
-      } finally {
-        setLoading(false);
+      if (rErr) console.error('[Finance] Erreur chargement relevés', rErr);
+      if (lErr) console.error('[Finance] Erreur chargement lignes', lErr);
+
+      setReleves(rowsToReleves(rData ?? [], lData ?? []));
+      if (oData) {
+        setObjectif({ montant: Number(oData.montant), label: (oData as any).label ?? undefined });
       }
+
+      setLoading(false);
     })();
   }, []);
 
-  // ─── Add releve ──────────────────────────────────────────────────────────────
+  // ─── Add ───────────────────────────────────────────────────────────────────────
   const addReleve = useCallback(async (data: Omit<Releve, 'id'>) => {
-    const tempId = `r_${Date.now()}`;
-    const newReleve: Releve = { ...data, id: tempId };
-
-    if (!useSupabase) {
-      const updated = [newReleve, ...releves];
+    if (mode === 'local') {
+      const newR: Releve = { ...data, id: `r_${Date.now()}` };
+      const updated = [newR, ...releves];
       setReleves(updated);
       localSaveReleves(updated);
       return;
@@ -99,10 +98,13 @@ export function useFinanceData() {
       .select()
       .single();
 
-    if (error || !inserted) return;
+    if (error || !inserted) {
+      console.error('[Finance] Erreur insert relevé', error);
+      return;
+    }
 
     if (data.lignes.length > 0) {
-      await supabase.from('finance_lignes').insert(
+      const { error: lErr } = await supabase.from('finance_lignes').insert(
         data.lignes.map((l) => ({
           id: l.id,
           releve_id: inserted.id,
@@ -111,27 +113,28 @@ export function useFinanceData() {
           montant: l.montant,
         }))
       );
+      if (lErr) console.error('[Finance] Erreur insert lignes', lErr);
     }
 
-    const finalReleve: Releve = { ...data, id: inserted.id };
-    setReleves((prev) => [finalReleve, ...prev]);
-  }, [useSupabase, releves]);
+    const newR: Releve = { ...data, id: inserted.id };
+    setReleves((prev) => [newR, ...prev]);
+  }, [mode, releves]);
 
-  // ─── Update releve ───────────────────────────────────────────────────────────
+  // ─── Update ───────────────────────────────────────────────────────────────────
   const updateReleve = useCallback(async (id: string, data: Omit<Releve, 'id'>) => {
-    if (!useSupabase) {
+    if (mode === 'local') {
       const updated = releves.map((r) => (r.id === id ? { ...data, id } : r));
       setReleves(updated);
       localSaveReleves(updated);
       return;
     }
 
-    await supabase
+    const { error: uErr } = await supabase
       .from('finance_releves')
       .update({ date: data.date, note: data.note ?? null })
       .eq('id', id);
+    if (uErr) console.error('[Finance] Erreur update relevé', uErr);
 
-    // Replace all lignes for this releve
     await supabase.from('finance_lignes').delete().eq('releve_id', id);
 
     if (data.lignes.length > 0) {
@@ -147,11 +150,11 @@ export function useFinanceData() {
     }
 
     setReleves((prev) => prev.map((r) => (r.id === id ? { ...data, id } : r)));
-  }, [useSupabase, releves]);
+  }, [mode, releves]);
 
-  // ─── Delete releve ───────────────────────────────────────────────────────────
+  // ─── Delete ───────────────────────────────────────────────────────────────────
   const deleteReleve = useCallback(async (id: string) => {
-    if (!useSupabase) {
+    if (mode === 'local') {
       const updated = releves.filter((r) => r.id !== id);
       setReleves(updated);
       localSaveReleves(updated);
@@ -160,14 +163,14 @@ export function useFinanceData() {
     await supabase.from('finance_lignes').delete().eq('releve_id', id);
     await supabase.from('finance_releves').delete().eq('id', id);
     setReleves((prev) => prev.filter((r) => r.id !== id));
-  }, [useSupabase, releves]);
+  }, [mode, releves]);
 
-  // ─── Save objectif ───────────────────────────────────────────────────────────
+  // ─── Objectif ─────────────────────────────────────────────────────────────────
   const saveObjectif = useCallback(async (obj: ObjectifPatrimoine) => {
     setObjectif(obj);
     localSaveObjectif(obj);
 
-    if (!useSupabase) return;
+    if (mode !== 'supabase') return;
 
     const { data: existing } = await supabase
       .from('finance_objectif')
@@ -178,14 +181,18 @@ export function useFinanceData() {
     if (existing) {
       await supabase
         .from('finance_objectif')
-        .update({ montant: obj.montant, label: obj.label ?? null })
+        .update({ montant: obj.montant, label: (obj as any).label ?? null })
         .eq('id', existing.id);
     } else {
       await supabase
         .from('finance_objectif')
-        .insert({ montant: obj.montant, label: obj.label ?? null });
+        .insert({ montant: obj.montant, label: (obj as any).label ?? null });
     }
-  }, [useSupabase]);
+  }, [mode]);
 
-  return { releves, objectif, loading, useSupabase, addReleve, updateReleve, deleteReleve, saveObjectif };
+  return {
+    releves, objectif, loading,
+    isSupabase: mode === 'supabase',
+    addReleve, updateReleve, deleteReleve, saveObjectif,
+  };
 }
