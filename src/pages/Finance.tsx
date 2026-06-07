@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import PatrimoineChart from '@/components/finance/PatrimoineChart';
@@ -6,7 +6,7 @@ import PatrimoineBreakdown from '@/components/finance/PatrimoineBreakdown';
 import AddReleveDialog from '@/components/finance/AddReleveDialog';
 import ObjectifDialog from '@/components/finance/ObjectifDialog';
 import { Releve, ObjectifPatrimoine, totalReleve, formatEuro } from '@/types/finance';
-import { TrendingUp, TrendingDown, Minus, Target, Plus, History } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Target, Plus, History, Pencil } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 
 const CACHE_KEY = 'immo_finance_v1';
@@ -85,6 +85,7 @@ export default function Finance() {
   const [releves, setReleves] = useState<Releve[]>(loadReleves);
   const [objectif, setObjectif] = useState<ObjectifPatrimoine | null>(loadObjectif);
   const [addOpen, setAddOpen] = useState(false);
+  const [releveToEdit, setReleveToEdit] = useState<Releve | null>(null);
   const [objectifOpen, setObjectifOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -107,6 +108,13 @@ export default function Finance() {
     showSuccess('Relevé enregistré');
   };
 
+  const handleUpdateReleve = (id: string, data: Omit<Releve, 'id'>) => {
+    const updated = releves.map(r => r.id === id ? { ...data, id } : r);
+    setReleves(updated);
+    saveReleves(updated);
+    showSuccess('Relevé mis à jour');
+  };
+
   const handleDeleteReleve = (id: string) => {
     if (!confirm('Supprimer ce relevé ?')) return;
     const updated = releves.filter(r => r.id !== id);
@@ -119,6 +127,16 @@ export default function Finance() {
     setObjectif(obj);
     saveObjectif(obj);
     showSuccess('Objectif enregistré');
+  };
+
+  const openEdit = (r: Releve) => {
+    setReleveToEdit(r);
+    setAddOpen(true);
+  };
+
+  const handleDialogClose = (v: boolean) => {
+    setAddOpen(v);
+    if (!v) setReleveToEdit(null);
   };
 
   return (
@@ -135,7 +153,7 @@ export default function Finance() {
               <p className="text-gray-500">Suivi de votre patrimoine personnel</p>
             </div>
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={() => { setReleveToEdit(null); setAddOpen(true); }}
               className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all active:scale-[0.98]"
             >
               <Plus className="w-5 h-5" />
@@ -145,7 +163,6 @@ export default function Finance() {
 
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-            {/* KPI 1: Patrimoine net */}
             <KpiCard
               variant="dark"
               title="Patrimoine net"
@@ -163,8 +180,6 @@ export default function Finance() {
                 )
               }
             />
-
-            {/* KPI 2: Évolution % */}
             <KpiCard
               title="Évolution mensuelle"
               value={prev ? `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(2)}%` : '—'}
@@ -176,8 +191,6 @@ export default function Finance() {
                 )
               }
             />
-
-            {/* KPI 3: Évolution € */}
             <KpiCard
               title="Variation (€)"
               value={
@@ -196,8 +209,6 @@ export default function Finance() {
                 )
               }
             />
-
-            {/* KPI 4: Remaining to goal */}
             <KpiCard
               title="Remaining to goal"
               value={
@@ -264,9 +275,13 @@ export default function Finance() {
                   const diff = nextTotal !== null ? total - nextTotal : null;
                   const pct = diff !== null && nextTotal ? (diff / nextTotal) * 100 : null;
                   return (
-                    <div key={r.id} className="flex items-center justify-between bg-gray-50 rounded-2xl px-5 py-4 group">
+                    <div
+                      key={r.id}
+                      onClick={() => openEdit(r)}
+                      className="flex items-center justify-between bg-gray-50 rounded-2xl px-5 py-4 group cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                    >
                       <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full ${ idx === 0 ? 'bg-black' : 'bg-gray-300' }`} />
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${ idx === 0 ? 'bg-black' : 'bg-gray-300' }`} />
                         <div>
                           <p className="text-sm font-bold">
                             {new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -275,13 +290,17 @@ export default function Finance() {
                           <p className="text-xs text-gray-400">{r.lignes.length} ligne{r.lignes.length > 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {pct !== null && (
                           <DeltaBadge value={pct} />
                         )}
                         <p className="text-base font-black tabular-nums">{formatEuro(total)}</p>
+                        {/* Icône édition visible au hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white rounded-xl shadow-sm">
+                          <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                        </div>
                         <button
-                          onClick={() => handleDeleteReleve(r.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteReleve(r.id); }}
                           className="opacity-0 group-hover:opacity-100 p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 transition-all"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
@@ -299,9 +318,11 @@ export default function Finance() {
 
       <AddReleveDialog
         open={addOpen}
-        onOpenChange={setAddOpen}
+        onOpenChange={handleDialogClose}
         lastReleve={last}
+        releveToEdit={releveToEdit}
         onSave={handleAddReleve}
+        onUpdate={handleUpdateReleve}
       />
       <ObjectifDialog
         open={objectifOpen}
