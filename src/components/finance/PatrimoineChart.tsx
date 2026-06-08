@@ -12,6 +12,8 @@ import {
 import { Releve, CategorieFinance, aggregateByCategorie, totalReleve, formatEuro } from '@/types/finance';
 import { Clock } from 'lucide-react';
 
+const PREV_COLOR = '#417078';
+
 type FilterKey = 'global' | CategorieFinance;
 
 const FILTERS: { key: FilterKey; label: string }[] = [
@@ -42,8 +44,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       )}
       {prev && (
         <div>
-          <p className="text-xl font-black text-violet-700">{formatEuro(prev.value)}</p>
-          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Prévisionnel</p>
+          <p className="text-xl font-black" style={{ color: PREV_COLOR }}>{formatEuro(prev.value)}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PREV_COLOR }}>Prévisionnel</p>
         </div>
       )}
     </div>
@@ -110,14 +112,15 @@ export default function PatrimoineChart({ releves }: Props) {
               </button>
             ))}
           </div>
+          {/* Toggle prévisionnel — couleur #417078 quand actif */}
           <button
             onClick={() => setShowPrev(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 ${
-              showPrev
-                ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
-                : 'bg-white text-gray-400 border-gray-200 hover:border-violet-300 hover:text-violet-500'
-            }`}
-            title="Afficher les prévisionnels"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200`}
+            style={showPrev
+              ? { backgroundColor: PREV_COLOR, color: 'white', borderColor: PREV_COLOR, boxShadow: `0 1px 3px ${PREV_COLOR}40` }
+              : { backgroundColor: 'white', color: '#9CA3AF', borderColor: '#E5E7EB' }
+            }
+            title="Afficher les prévisionels"
           >
             <Clock className="w-3.5 h-3.5" />
             Prévis.
@@ -146,9 +149,9 @@ export default function PatrimoineChart({ releves }: Props) {
                 dot={{ fill: '#111827', r: 3, strokeWidth: 0 }}
                 activeDot={{ r: 5, fill: '#111827', strokeWidth: 0 }} />
               {hasPrevData && (
-                <Line type="monotone" dataKey="valuePrev" stroke="#7c3aed" strokeWidth={2}
+                <Line type="monotone" dataKey="valuePrev" stroke={PREV_COLOR} strokeWidth={2}
                   strokeDasharray="6 4" connectNulls dot={false}
-                  activeDot={{ r: 5, fill: '#7c3aed', strokeWidth: 0 }} />
+                  activeDot={{ r: 5, fill: PREV_COLOR, strokeWidth: 0 }} />
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -161,9 +164,9 @@ export default function PatrimoineChart({ releves }: Props) {
               </div>
               <div className="flex items-center gap-1.5">
                 <svg width="24" height="4" viewBox="0 0 24 4">
-                  <line x1="0" y1="2" x2="24" y2="2" stroke="#7c3aed" strokeWidth="2" strokeDasharray="6 4" />
+                  <line x1="0" y1="2" x2="24" y2="2" stroke={PREV_COLOR} strokeWidth="2" strokeDasharray="6 4" />
                 </svg>
-                <span className="text-[10px] font-bold text-violet-500">Prévisionnel</span>
+                <span className="text-[10px] font-bold" style={{ color: PREV_COLOR }}>Prévisionnel</span>
               </div>
             </div>
           )}

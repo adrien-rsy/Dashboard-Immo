@@ -14,21 +14,21 @@ interface KpiCardProps {
   title: string;
   value: string;
   sub?: React.ReactNode;
-  variant?: 'dark' | 'light' | 'violet';
+  variant?: 'dark' | 'light';
   onClick?: () => void;
   clickable?: boolean;
 }
 
 function KpiCard({ title, value, sub, variant = 'light', onClick, clickable }: KpiCardProps) {
-  const bg = variant === 'dark' ? 'bg-black text-white' : variant === 'violet' ? 'bg-violet-600 text-white' : 'bg-white text-black';
+  const bg = variant === 'dark' ? 'bg-black text-white' : 'bg-white text-black';
   return (
     <div onClick={onClick}
       className={`p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-all duration-300 hover:shadow-lg overflow-hidden min-w-0 ${bg} ${clickable ? 'cursor-pointer active:scale-[0.98]' : ''}`}>
-      <p className={`text-xs md:text-sm mb-3 md:mb-4 truncate ${ variant !== 'light' ? 'text-white/60' : 'text-gray-500' }`}>{title}</p>
+      <p className={`text-xs md:text-sm mb-3 md:mb-4 truncate ${ variant === 'dark' ? 'text-white/60' : 'text-gray-500' }`}>{title}</p>
       <h3 className="text-2xl md:text-3xl font-black tabular-nums mb-3 md:mb-4 leading-none truncate">{value}</h3>
       {sub && <div className="flex items-center gap-2 flex-wrap">{sub}</div>}
       {clickable && !sub && (
-        <p className={`text-xs mt-2 ${ variant !== 'light' ? 'text-white/50' : 'text-gray-400' }`}>Appuyer pour définir</p>
+        <p className={`text-xs mt-2 ${ variant === 'dark' ? 'text-white/50' : 'text-gray-400' }`}>Appuyer pour définir</p>
       )}
     </div>
   );
@@ -59,12 +59,10 @@ export default function Finance() {
   const [objectifOpen, setObjectifOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Sépare réels et prévisionnels
   const reels = releves.filter(r => !r.previsionnel);
   const sortedReels = [...reels].sort((a, b) => b.date.localeCompare(a.date));
   const sorted = [...releves].sort((a, b) => b.date.localeCompare(a.date));
 
-  // KPIs basés sur les relevés RÉELS uniquement
   const last = sortedReels[0] ?? null;
   const prev = sortedReels[1] ?? null;
   const lastTotal  = last ? totalReleve(last) : 0;
@@ -73,7 +71,6 @@ export default function Finance() {
   const deltaPct   = prev && prevTotal !== 0 ? (deltaEuro / prevTotal) * 100 : 0;
   const remainingToGoal = objectif ? objectif.montant - lastTotal : null;
 
-  // KPI Prévisionnel : prochain relevé prévisionnel dans le futur
   const today = new Date().toISOString().split('T')[0];
   const nextPrev = [...releves]
     .filter(r => r.previsionnel && r.date >= today)
@@ -116,7 +113,7 @@ export default function Finance() {
                 {/* 4 KPIs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
 
-                  {/* 1. Patrimoine net — réels seulement */}
+                  {/* 1. Patrimoine net */}
                   <KpiCard variant="dark" title="Patrimoine net"
                     value={last ? formatEuro(lastTotal) : '—'}
                     sub={
@@ -126,7 +123,7 @@ export default function Finance() {
                     }
                   />
 
-                  {/* 2. Variation € — réels seulement */}
+                  {/* 2. Variation € */}
                   <KpiCard title="Variation (€)"
                     value={prev ? `${deltaEuro >= 0 ? '+' : ''}${formatEuro(deltaEuro)}` : '—'}
                     sub={
@@ -135,12 +132,12 @@ export default function Finance() {
                     }
                   />
 
-                  {/* 3. Prévisionnel — prochain relevé prévisionnel */}
-                  <KpiCard variant={nextPrev ? 'violet' : 'light'} title="Prévisionnel"
+                  {/* 3. Prévisionnel — fond blanc comme les autres KPIs */}
+                  <KpiCard title="Prévisionnel"
                     value={nextPrev ? formatEuro(totalReleve(nextPrev)) : '—'}
                     sub={
                       nextPrev ? (
-                        <span className="text-xs text-white/70 truncate">
+                        <span className="text-xs text-gray-400 truncate">
                           {new Date(nextPrev.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </span>
                       ) : (
@@ -185,7 +182,6 @@ export default function Finance() {
                     <div className="space-y-3">
                       {(showHistory ? sorted : sorted.slice(0, 5)).map((r, idx) => {
                         const total = totalReleve(r);
-                        // Calcul delta uniquement entre réels consécutifs
                         const reelIdx = sortedReels.findIndex(x => x.id === r.id);
                         const prevReel = reelIdx >= 0 ? sortedReels[reelIdx + 1] : null;
                         const diff = prevReel ? total - totalReleve(prevReel) : null;
@@ -195,18 +191,18 @@ export default function Finance() {
                           <div key={r.id} onClick={() => openEdit(r)}
                             className={`flex items-center justify-between rounded-2xl px-4 md:px-5 py-4 group cursor-pointer transition-colors duration-200 ${
                               isPrev
-                                ? 'bg-violet-50 hover:bg-violet-100 border border-violet-100'
+                                ? 'bg-[#417078]/8 hover:bg-[#417078]/12 border border-[#417078]/20'
                                 : 'bg-gray-50 hover:bg-gray-100'
                             }`}>
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={`w-2 h-2 rounded-full shrink-0 ${ isPrev ? 'bg-violet-400' : idx === 0 ? 'bg-black' : 'bg-gray-300' }`} />
+                              <div className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: isPrev ? '#417078' : idx === 0 ? '#111827' : '#D1D5DB' }} />
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm font-bold truncate">
                                     {new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                                   </p>
                                   {isPrev && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-600 text-[10px] font-black uppercase tracking-wider rounded-full shrink-0">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full shrink-0" style={{ backgroundColor: '#417078', color: 'white' }}>
                                       <Clock className="w-2.5 h-2.5" />Prévis.
                                     </span>
                                   )}
@@ -217,7 +213,7 @@ export default function Finance() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0 ml-2">
                               {!isPrev && pct !== null && <DeltaBadge value={pct} />}
-                              <p className={`text-sm md:text-base font-black tabular-nums ${ isPrev ? 'text-violet-700' : '' }`}>{formatEuro(total)}</p>
+                              <p className="text-sm md:text-base font-black tabular-nums" style={{ color: isPrev ? '#417078' : undefined }}>{formatEuro(total)}</p>
                               <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity p-2 bg-white rounded-xl shadow-sm">
                                 <Pencil className="w-3.5 h-3.5 text-gray-500" />
                               </div>
