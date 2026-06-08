@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Releve, LigneCompte, CategorieFinance, CATEGORIES } from '@/types/finance';
 import { Plus, Trash2, Pencil, CalendarDays, CheckCircle2, Clock } from 'lucide-react';
 
+const PREV_COLOR = '#417078';
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -146,11 +148,11 @@ export default function AddReleveDialog({
                 <button
                   type="button"
                   onClick={() => setPrevisionnel(true)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    previsionnel
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                  }`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200"
+                  style={previsionnel
+                    ? { backgroundColor: PREV_COLOR, color: 'white', boxShadow: `0 1px 3px ${PREV_COLOR}40` }
+                    : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                  }
                 >
                   <Clock className="w-3.5 h-3.5" />
                   Prévisionnel
@@ -162,9 +164,12 @@ export default function AddReleveDialog({
 
         {/* Bandeau prévisionnel */}
         {previsionnel && (
-          <div className="mx-5 md:mx-8 mt-2 px-4 py-2.5 bg-violet-50 border border-violet-100 rounded-2xl flex items-center gap-2 shrink-0">
-            <Clock className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-            <p className="text-xs text-violet-600 font-medium">
+          <div
+            className="mx-5 md:mx-8 mt-2 px-4 py-2.5 rounded-2xl flex items-center gap-2 shrink-0"
+            style={{ backgroundColor: `${PREV_COLOR}12`, border: `1px solid ${PREV_COLOR}30` }}
+          >
+            <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: PREV_COLOR }} />
+            <p className="text-xs font-medium" style={{ color: PREV_COLOR }}>
               Ce relevé sera affiché en pointillé sur le graphique et exclu des KPIs patrimoniaux.
             </p>
           </div>
@@ -266,9 +271,17 @@ export default function AddReleveDialog({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer — bouton prévisionnel en #417078 */}
         <div className="px-5 pb-5 md:px-8 md:pb-7 pt-2 shrink-0 border-t border-gray-100">
-          <button onClick={handleSave} disabled={!canSave} className={`w-full py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 ${ previsionnel ? 'bg-violet-600 text-white shadow-violet-200 hover:bg-violet-700' : 'bg-black text-white shadow-black/20 hover:bg-gray-800' }`}>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-40"
+            style={previsionnel
+              ? { backgroundColor: PREV_COLOR, color: 'white', boxShadow: `0 4px 14px ${PREV_COLOR}40` }
+              : { backgroundColor: '#111827', color: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }
+            }
+          >
             {isEdit ? 'Enregistrer les modifications' : previsionnel ? 'Enregistrer le prévisionnel' : 'Enregistrer le relevé'}
           </button>
         </div>
