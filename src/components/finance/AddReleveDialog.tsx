@@ -15,11 +15,18 @@ interface Props {
   onUpdate?: (id: string, releve: Omit<Releve, 'id'>) => void;
 }
 
+/** Couleurs de fond ultra-sobres par catégorie */
+const CAT_STYLE: Record<CategorieFinance, { row: string; dot: string; label: string }> = {
+  Cash:           { row: 'bg-emerald-50/70',  dot: 'bg-emerald-400', label: 'text-emerald-600' },
+  'Épargne':      { row: 'bg-blue-50/70',     dot: 'bg-blue-400',    label: 'text-blue-600'    },
+  Investissement: { row: 'bg-amber-50/70',    dot: 'bg-amber-400',   label: 'text-amber-600'   },
+  Pro:            { row: 'bg-orange-50/70',   dot: 'bg-orange-400',  label: 'text-orange-600'  },
+};
+
 function newLigne(cat: CategorieFinance = 'Cash'): LigneCompte {
   return { id: `l_${Date.now()}_${Math.random()}`, nom: '', categorie: cat, montant: 0 };
 }
 
-/** Formate YYYY-MM-DD en "7 juin 2026" */
 function formatDateFR(iso: string): string {
   if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
@@ -32,11 +39,7 @@ export default function AddReleveDialog({
   open, onOpenChange, lastReleve, releveToEdit, onSave, onUpdate,
 }: Props) {
   const isEdit = !!releveToEdit;
-
-  // L'input[type=date] est rendu invisible mais toujours dans le DOM
-  // Il est déclenché UNIQUEMENT via showPicker() au clic volontaire
   const hiddenDateRef = useRef<HTMLInputElement>(null);
-  // Flag: le dialog vient juste de s'ouvrir — bloque tout focus automatique
   const justOpenedRef = useRef(false);
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -45,11 +48,8 @@ export default function AddReleveDialog({
 
   useEffect(() => {
     if (!open) return;
-
-    // Marque l'ouverture pour bloquer tout focus parasite pendant 400ms
     justOpenedRef.current = true;
     const t = setTimeout(() => { justOpenedRef.current = false; }, 400);
-
     if (isEdit && releveToEdit) {
       setDate(releveToEdit.date);
       setNote(releveToEdit.note ?? '');
@@ -63,20 +63,15 @@ export default function AddReleveDialog({
           : [newLigne()]
       );
     }
-
-    // S'assure que l'input caché n'a pas le focus au montage
     hiddenDateRef.current?.blur();
-
     return () => clearTimeout(t);
   }, [open, releveToEdit, isEdit]);
 
-  /** Ouvre le picker natif uniquement sur tap/clic explicite */
   const openDatePicker = () => {
-    if (justOpenedRef.current) return; // Ignore si le dialog vient d'ouvrir
+    if (justOpenedRef.current) return;
     const input = hiddenDateRef.current;
     if (!input) return;
     input.focus({ preventScroll: true });
-    // showPicker() est supporté sur iOS 16+, Android Chrome, desktop
     if (typeof (input as any).showPicker === 'function') {
       try { (input as any).showPicker(); } catch (_) { /* ignore */ }
     }
@@ -86,8 +81,12 @@ export default function AddReleveDialog({
     setLignes(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
   const removeLigne = (id: string) =>
     setLignes(prev => prev.filter(l => l.id !== id));
-  const addLigne = () =>
-    setLignes(prev => [...prev, newLigne()]);
+
+  /** Nouvelle ligne : pré-sélectionne la catégorie du dernier groupe visible */
+  const addLigne = () => {
+    const lastCat = lignes.length > 0 ? lignes[lignes.length - 1].categorie : 'Cash';
+    setLignes(prev => [...prev, newLigne(lastCat)]);
+  };
 
   const handleSave = () => {
     const cleanLignes = lignes.filter(l => l.nom.trim() !== '');
@@ -99,6 +98,13 @@ export default function AddReleveDialog({
   };
 
   const canSave = lignes.some(l => l.nom.trim() !== '') && !!date;
+
+  /** Trie les lignes par ordre de catégorie CATEGORIES, puis index d'insertion */
+  const lignesParCat = CATEGORIES.reduce<Record<CategorieFinance, LigneCompte[]>>(
+    (acc, cat) => ({ ...acc, [cat]: [] }),
+    {} as Record<CategorieFinance, LigneCompte[]>
+  );
+  lignes.forEach(l => lignesParCat[l.categorie].push(l));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,12 +138,8 @@ export default function AddReleveDialog({
 
           {/* Date + Note */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-            {/* Champ date : bouton visible + input[date] invisible */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Date du relevé</Label>
-
-              {/* Bouton visible — déclenche showPicker() uniquement au clic */}
               <button
                 type="button"
                 onClick={openDatePicker}
@@ -148,36 +150,17 @@ export default function AddReleveDialog({
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-400 shrink-0" />
               </button>
-
-              {/*
-                Input[date] invisible :
-                - position:absolute hors du flux pour éviter tout scroll/layout
-                - opacity:0 pointer-events:none — ne reçoit jamais de focus accidentel
-                - tabIndex=-1 — exclu de la navigation clavier
-                - La valeur est lue via onChange, le picker est ouvert via showPicker()
-              */}
               <input
                 ref={hiddenDateRef}
                 type="date"
                 value={date}
                 tabIndex={-1}
                 onChange={e => { if (e.target.value) setDate(e.target.value); }}
-                onFocus={e => {
-                  // Ferme immédiatement si focus arrivé autrement que par openDatePicker
-                  if (justOpenedRef.current) e.currentTarget.blur();
-                }}
-                style={{
-                  position: 'absolute',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  width: '1px',
-                  height: '1px',
-                  overflow: 'hidden',
-                }}
+                onFocus={e => { if (justOpenedRef.current) e.currentTarget.blur(); }}
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px', overflow: 'hidden' }}
                 aria-hidden="true"
               />
             </div>
-
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Note (optionnel)</Label>
               <Input
@@ -189,64 +172,89 @@ export default function AddReleveDialog({
             </div>
           </div>
 
-          {/* Lignes */}
-          <div className="space-y-2.5">
-            <div className="hidden sm:grid grid-cols-12 gap-2 px-1">
-              <span className="col-span-5 text-[10px] font-bold uppercase text-gray-400">Compte</span>
-              <span className="col-span-3 text-[10px] font-bold uppercase text-gray-400">Catégorie</span>
-              <span className="col-span-3 text-[10px] font-bold uppercase text-gray-400">Montant (€)</span>
-              <span className="col-span-1" />
-            </div>
-
-            {lignes.map((ligne) => (
-              <div key={ligne.id} className="bg-gray-50 rounded-2xl p-3 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center">
-                <div className="sm:col-span-5">
-                  <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Compte</Label>
-                  <Input
-                    placeholder="Nom du compte"
-                    value={ligne.nom}
-                    onChange={e => updateLigne(ligne.id, 'nom', e.target.value)}
-                    className="rounded-xl border-0 bg-white shadow-sm text-sm"
-                  />
-                </div>
-                <div className="sm:col-span-3">
-                  <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Catégorie</Label>
-                  <Select
-                    value={ligne.categorie}
-                    onValueChange={val => updateLigne(ligne.id, 'categorie', val as CategorieFinance)}
-                  >
-                    <SelectTrigger className="rounded-xl border-0 bg-white shadow-sm text-sm w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end gap-2 sm:contents">
-                  <div className="flex-1 sm:col-span-3">
-                    <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Montant (€)</Label>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="0"
-                      value={ligne.montant || ''}
-                      onChange={e => updateLigne(ligne.id, 'montant', Number(e.target.value))}
-                      className="rounded-xl border-0 bg-white shadow-sm text-sm font-bold tabular-nums"
-                    />
+          {/* Lignes groupées par catégorie */}
+          <div className="space-y-4">
+            {CATEGORIES.map(cat => {
+              const group = lignesParCat[cat];
+              const style = CAT_STYLE[cat];
+              if (group.length === 0) return null;
+              return (
+                <div key={cat}>
+                  {/* Label de groupe */}
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${style.label}`}>{cat}</span>
                   </div>
-                  <div className="shrink-0 sm:col-span-1 flex justify-center pb-0.5 sm:pb-0">
-                    <button
-                      onClick={() => removeLigne(ligne.id)}
-                      className="p-2 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-xl transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                  {/* En-têtes colonnes — desktop */}
+                  <div className="hidden sm:grid grid-cols-12 gap-2 px-1 mb-1">
+                    <span className="col-span-5 text-[10px] font-bold uppercase text-gray-300">Compte</span>
+                    <span className="col-span-3 text-[10px] font-bold uppercase text-gray-300">Catégorie</span>
+                    <span className="col-span-3 text-[10px] font-bold uppercase text-gray-300">Montant (€)</span>
+                    <span className="col-span-1" />
+                  </div>
+
+                  <div className="space-y-2">
+                    {group.map(ligne => (
+                      <div
+                        key={ligne.id}
+                        className={`${style.row} rounded-2xl p-3 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center`}
+                      >
+                        {/* Nom */}
+                        <div className="sm:col-span-5">
+                          <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Compte</Label>
+                          <Input
+                            placeholder="Nom du compte"
+                            value={ligne.nom}
+                            onChange={e => updateLigne(ligne.id, 'nom', e.target.value)}
+                            className="rounded-xl border-0 bg-white shadow-sm text-sm"
+                          />
+                        </div>
+                        {/* Catégorie */}
+                        <div className="sm:col-span-3">
+                          <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Catégorie</Label>
+                          <Select
+                            value={ligne.categorie}
+                            onValueChange={val => updateLigne(ligne.id, 'categorie', val as CategorieFinance)}
+                          >
+                            <SelectTrigger className="rounded-xl border-0 bg-white shadow-sm text-sm w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Montant + supprimer */}
+                        <div className="flex items-end gap-2 sm:contents">
+                          <div className="flex-1 sm:col-span-3">
+                            <Label className="sm:hidden text-[10px] font-bold uppercase text-gray-400 mb-1 block">Montant (€)</Label>
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="0"
+                              value={ligne.montant || ''}
+                              onChange={e => updateLigne(ligne.id, 'montant', Number(e.target.value))}
+                              className="rounded-xl border-0 bg-white shadow-sm text-sm font-bold tabular-nums"
+                            />
+                          </div>
+                          <div className="shrink-0 sm:col-span-1 flex justify-center pb-0.5 sm:pb-0">
+                            <button
+                              onClick={() => removeLigne(ligne.id)}
+                              className="p-2 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
+            {/* Lignes sans catégorie assignée (sécurité) + bouton ajout */}
             <button
               onClick={addLigne}
               className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-400 hover:border-black hover:text-black transition-all duration-200"
