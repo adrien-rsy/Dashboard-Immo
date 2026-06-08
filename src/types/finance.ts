@@ -12,6 +12,7 @@ export interface Releve {
   date: string; // ISO date string YYYY-MM-DD
   lignes: LigneCompte[];
   note?: string;
+  previsionnel?: boolean; // true = relevé prévisionnel
 }
 
 export interface ObjectifPatrimoine {
