@@ -18,11 +18,13 @@ function localSaveObjectif(o: ObjectifPatrimoine) {
   localStorage.setItem(LOCAL_OBJ, JSON.stringify(o));
 }
 
+// Mappe les lignes DB vers le type Releve — inclut le champ previsionnel
 function rowsToReleves(relRows: any[], ligneRows: any[]): Releve[] {
   return relRows.map((r) => ({
     id: r.id,
     date: r.date,
     note: r.note ?? undefined,
+    previsionnel: r.previsionnel ?? false,
     lignes: ligneRows
       .filter((l) => l.releve_id === r.id)
       .map((l) => ({
@@ -38,20 +40,17 @@ export function useFinanceData() {
   const [releves, setReleves] = useState<Releve[]>([]);
   const [objectif, setObjectif] = useState<ObjectifPatrimoine | null>(null);
   const [loading, setLoading] = useState(true);
-  // On force Supabase en priorité — si les tables existent on les utilise
   const [mode, setMode] = useState<'supabase' | 'local' | null>(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
 
-      // Tentative Supabase : on fait un SELECT count simple
       const { error: testErr } = await supabase
         .from('finance_releves')
         .select('id', { count: 'exact', head: true });
 
       if (testErr) {
-        // Tables absentes ou RLS bloquant → fallback local
         console.warn('[Finance] Supabase indisponible, mode localStorage', testErr.message);
         setMode('local');
         setReleves(localLoadReleves());
@@ -60,7 +59,6 @@ export function useFinanceData() {
         return;
       }
 
-      // Supabase OK → chargement complet
       setMode('supabase');
 
       const [{ data: rData, error: rErr }, { data: lData, error: lErr }, { data: oData }] =
@@ -82,7 +80,7 @@ export function useFinanceData() {
     })();
   }, []);
 
-  // ─── Add ───────────────────────────────────────────────────────────────────────
+  // ─── Add ───────────────────────────────────────────────────────────────────────────────
   const addReleve = useCallback(async (data: Omit<Releve, 'id'>) => {
     if (mode === 'local') {
       const newR: Releve = { ...data, id: `r_${Date.now()}` };
@@ -94,7 +92,11 @@ export function useFinanceData() {
 
     const { data: inserted, error } = await supabase
       .from('finance_releves')
-      .insert({ date: data.date, note: data.note ?? null })
+      .insert({
+        date: data.date,
+        note: data.note ?? null,
+        previsionnel: data.previsionnel ?? false,   // ← champ persisté
+      })
       .select()
       .single();
 
@@ -120,7 +122,7 @@ export function useFinanceData() {
     setReleves((prev) => [newR, ...prev]);
   }, [mode, releves]);
 
-  // ─── Update ───────────────────────────────────────────────────────────────────
+  // ─── Update ──────────────────────────────────────────────────────────────────────────
   const updateReleve = useCallback(async (id: string, data: Omit<Releve, 'id'>) => {
     if (mode === 'local') {
       const updated = releves.map((r) => (r.id === id ? { ...data, id } : r));
@@ -131,7 +133,11 @@ export function useFinanceData() {
 
     const { error: uErr } = await supabase
       .from('finance_releves')
-      .update({ date: data.date, note: data.note ?? null })
+      .update({
+        date: data.date,
+        note: data.note ?? null,
+        previsionnel: data.previsionnel ?? false,   // ← champ persisté
+      })
       .eq('id', id);
     if (uErr) console.error('[Finance] Erreur update relevé', uErr);
 
@@ -152,7 +158,7 @@ export function useFinanceData() {
     setReleves((prev) => prev.map((r) => (r.id === id ? { ...data, id } : r)));
   }, [mode, releves]);
 
-  // ─── Delete ───────────────────────────────────────────────────────────────────
+  // ─── Delete ──────────────────────────────────────────────────────────────────────────
   const deleteReleve = useCallback(async (id: string) => {
     if (mode === 'local') {
       const updated = releves.filter((r) => r.id !== id);
@@ -165,7 +171,7 @@ export function useFinanceData() {
     setReleves((prev) => prev.filter((r) => r.id !== id));
   }, [mode, releves]);
 
-  // ─── Objectif ─────────────────────────────────────────────────────────────────
+  // ─── Objectif ─────────────────────────────────────────────────────────────────────────
   const saveObjectif = useCallback(async (obj: ObjectifPatrimoine) => {
     setObjectif(obj);
     localSaveObjectif(obj);
