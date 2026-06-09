@@ -51,6 +51,11 @@ function DeltaBadge({ value, isDark }: { value: number; isDark?: boolean }) {
   );
 }
 
+// Formate une date ISO en "jan. 25", "8 juin 26", etc. — court mais lisible
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' });
+}
+
 export default function Finance() {
   const { releves, objectif, loading, addReleve, updateReleve, deleteReleve, saveObjectif } = useFinanceData();
 
@@ -113,11 +118,17 @@ export default function Finance() {
                 {/* 4 KPIs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
 
-                  {/* 1. Patrimoine net */}
-                  <KpiCard variant="dark" title="Patrimoine net"
+                  {/* 1. Patrimoine net — titre dynamique avec la date du dernier relevé réel */}
+                  <KpiCard variant="dark"
+                    title={last ? `Patrimoine net au ${shortDate(last.date)}` : 'Patrimoine net'}
                     value={last ? formatEuro(lastTotal) : '—'}
                     sub={
-                      last && prev ? (<><DeltaBadge value={deltaPct} isDark /><span className="text-xs text-white/50 truncate">vs mois préc.</span></>) :
+                      last && prev ? (
+                        <>
+                          <DeltaBadge value={deltaPct} isDark />
+                          <span className="text-xs text-white/50 truncate">vs {shortDate(prev.date)}</span>
+                        </>
+                      ) :
                       last ? <span className="text-xs text-white/50">Premier relevé</span> :
                       <span className="text-xs text-white/50">Aucun relevé</span>
                     }
@@ -127,12 +138,12 @@ export default function Finance() {
                   <KpiCard title="Variation (€)"
                     value={prev ? `${deltaEuro >= 0 ? '+' : ''}${formatEuro(deltaEuro)}` : '—'}
                     sub={
-                      prev ? (<><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400 truncate">depuis le préc.</span></>) :
+                      prev ? (<><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400 truncate">vs {shortDate(prev.date)}</span></>) :
                       <span className="text-xs text-gray-400">Pas encore de comparaison</span>
                     }
                   />
 
-                  {/* 3. Prévisionnel — fond blanc comme les autres KPIs */}
+                  {/* 3. Prévisionnel */}
                   <KpiCard title="Prévisionnel"
                     value={nextPrev ? formatEuro(totalReleve(nextPrev)) : '—'}
                     sub={
