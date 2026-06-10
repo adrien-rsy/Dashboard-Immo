@@ -51,7 +51,7 @@ function DeltaBadge({ value, isDark }: { value: number; isDark?: boolean }) {
   );
 }
 
-// Formate une date ISO en "jan. 25", "8 juin 26", etc. — court mais lisible
+// Formate une date ISO en "8 juin 26" — court mais lisible
 function shortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' });
 }
@@ -70,10 +70,10 @@ export default function Finance() {
 
   const last = sortedReels[0] ?? null;
   const prev = sortedReels[1] ?? null;
-  const lastTotal  = last ? totalReleve(last) : 0;
-  const prevTotal  = prev ? totalReleve(prev) : 0;
-  const deltaEuro  = last && prev ? lastTotal - prevTotal : 0;
-  const deltaPct   = prev && prevTotal !== 0 ? (deltaEuro / prevTotal) * 100 : 0;
+  const lastTotal = last ? totalReleve(last) : 0;
+  const prevTotal = prev ? totalReleve(prev) : 0;
+  const deltaEuro = last && prev ? lastTotal - prevTotal : 0;
+  const deltaPct  = prev && prevTotal !== 0 ? (deltaEuro / prevTotal) * 100 : 0;
   const remainingToGoal = objectif ? objectif.montant - lastTotal : null;
 
   const today = new Date().toISOString().split('T')[0];
@@ -118,7 +118,7 @@ export default function Finance() {
                 {/* 4 KPIs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
 
-                  {/* 1. Patrimoine net — titre dynamique avec la date du dernier relevé réel */}
+                  {/* 1. Patrimoine net */}
                   <KpiCard variant="dark"
                     title={last ? `Patrimoine net au ${shortDate(last.date)}` : 'Patrimoine net'}
                     value={last ? formatEuro(lastTotal) : '—'}
@@ -134,12 +134,18 @@ export default function Finance() {
                     }
                   />
 
-                  {/* 2. Variation € */}
+                  {/* 2. Variation € — badge avec le vrai deltaPct */}
                   <KpiCard title="Variation (€)"
                     value={prev ? `${deltaEuro >= 0 ? '+' : ''}${formatEuro(deltaEuro)}` : '—'}
                     sub={
-                      prev ? (<><DeltaBadge value={deltaEuro > 0 ? 1 : deltaEuro < 0 ? -1 : 0} /><span className="text-xs text-gray-400 truncate">vs {shortDate(prev.date)}</span></>) :
-                      <span className="text-xs text-gray-400">Pas encore de comparaison</span>
+                      prev ? (
+                        <>
+                          <DeltaBadge value={deltaPct} />
+                          <span className="text-xs text-gray-400 truncate">vs {shortDate(prev.date)}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">Pas encore de comparaison</span>
+                      )
                     }
                   />
 
@@ -160,7 +166,7 @@ export default function Finance() {
                   {/* 4. Remaining to goal */}
                   <KpiCard title="Remaining to goal"
                     value={remainingToGoal !== null ? (remainingToGoal <= 0 ? '🎯 Atteint' : formatEuro(remainingToGoal)) : 'Définir →'}
-                    sub={objectif ? <span className="text-xs text-gray-400 truncate">Objectif : {formatEuro(objectif.montant)}</span> : undefined}
+                    sub={objectif ? <span className="text-xs text-gray-400 truncate">Objectif : {formatEuro(objectif.montant)}</span> : undefined}
                     clickable onClick={() => setObjectifOpen(true)}
                   />
                 </div>
@@ -206,7 +212,7 @@ export default function Finance() {
                                 : 'bg-gray-50 hover:bg-gray-100'
                             }`}>
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: isPrev ? '#417078' : idx === 0 ? '#111827' : '#D1D5DB' }} />
+                              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: isPrev ? '#417078' : idx === 0 ? '#111827' : '#D1D5DB' }} />
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm font-bold truncate">
