@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle } from 'lucide-react';
+import { TrendingDown, TrendingUp, Zap, MoreVertical, Plus, Check, Calculator, Layers, Trash2, Wallet, Percent, Settings2, Clock, Banknote, Coins, Copy, AlertTriangle, PencilLine, RefreshCw } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -65,7 +65,9 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         apport: scenario.apport || 0,
         interestRate: scenario.interestRate || 0,
         agenceRate: scenario.agenceRate != null ? scenario.agenceRate : 5,
-        isNotaireReduced: scenario.isNotaireReduced || false
+        isNotaireReduced: scenario.isNotaireReduced || false,
+        financeManual: scenario.financeManual || false,
+        financeManualAmount: scenario.financeManualAmount || 0,
       },
       lotPrices: lots.reduce((acc: any, lot: any) => ({ ...acc, [lot.id]: lot.prices[scenario.id] || 0 }), {}),
       costValues: relevantCosts.reduce((acc: any, cost: any) => ({ ...acc, [cost.id]: cost.values[scenario.id] || 0 }), {}),
@@ -112,7 +114,18 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
     e.preventDefault();
     if (!editForm) return;
     if (innerEditingCost.type === 'finance') {
-      setEditForm({ ...editForm, metadata: { ...editForm.metadata, apport: innerEditingCost.apport, interestRate: innerEditingCost.interestRate, duration: innerEditingCost.duration }, costNotes: { ...(editForm.costNotes || {}), [innerEditingCost.id]: innerEditingCost.note } });
+      setEditForm({
+        ...editForm,
+        metadata: {
+          ...editForm.metadata,
+          apport: innerEditingCost.apport,
+          interestRate: innerEditingCost.interestRate,
+          duration: innerEditingCost.duration,
+          financeManual: innerEditingCost.financeManual,
+          financeManualAmount: innerEditingCost.financeManualAmount,
+        },
+        costNotes: { ...(editForm.costNotes || {}), [innerEditingCost.id]: innerEditingCost.note }
+      });
     } else if (innerEditingCost.type === 'agence') {
       setEditForm({ ...editForm, metadata: { ...editForm.metadata, agenceRate: innerEditingCost.agenceRate }, costNotes: { ...(editForm.costNotes || {}), [innerEditingCost.id]: innerEditingCost.note } });
     } else if (innerEditingCost.type === 'notaire') {
@@ -152,6 +165,20 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
         if (cost.type === 'agence') return acc + Math.round(acq * (agenceRate / 100));
         return acc + (form.costValues[cost.id] || 0);
       }, 0);
+  };
+
+  const getFinanceDisplayValue = (form: any) => {
+    if (!form) return 0;
+    if (form.metadata?.financeManual) {
+      return form.metadata?.financeManualAmount || 0;
+    }
+    const acq = form.costValues['acq'] || 0;
+    const travaux = form.costValues['travaux'] || 0;
+    const others = Object.entries(form.costValues || {}).filter(([id]) => !['acq', 'travaux', 'notaire', 'agence', 'finance'].includes(id)).reduce((acc, [_, v]) => acc + (v as number), 0);
+    const notaire = Math.round(acq * (form.metadata?.isNotaireReduced ? 0.03 : 0.08));
+    const agence = Math.round(acq * ((form.metadata?.agenceRate || 0) / 100));
+    const financed = Math.max(0, acq + travaux + others + notaire + agence - (form.metadata?.apport || 0));
+    return Math.round(financed * (form.metadata?.duration || 0) * ((form.metadata?.interestRate || 0) / 100 / 12));
   };
 
   return (
@@ -463,19 +490,11 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                       let displayValue = editForm.costValues[cost.id] ?? 0;
                       if (cost.type === 'notaire') displayValue = Math.round((editForm.costValues['acq'] || 0) * (editForm.metadata?.isNotaireReduced ? 0.03 : 0.08));
                       if (cost.type === 'agence') displayValue = Math.round((editForm.costValues['acq'] || 0) * ((editForm.metadata?.agenceRate || 0) / 100));
-                      if (cost.type === 'finance') {
-                        const acq = editForm.costValues['acq'] || 0;
-                        const travaux = editForm.costValues['travaux'] || 0;
-                        const others = Object.entries(editForm.costValues || {}).filter(([id]) => !['acq', 'travaux', 'notaire', 'agence', 'finance'].includes(id)).reduce((acc, [_, v]) => acc + (v as number), 0);
-                        const notaire = Math.round(acq * (editForm.metadata?.isNotaireReduced ? 0.03 : 0.08));
-                        const agence = Math.round(acq * ((editForm.metadata?.agenceRate || 0) / 100));
-                        const financed = Math.max(0, acq + travaux + others + notaire + agence - (editForm.metadata?.apport || 0));
-                        displayValue = Math.round(financed * (editForm.metadata?.duration || 0) * ((editForm.metadata?.interestRate || 0) / 100 / 12));
-                      }
+                      if (cost.type === 'finance') displayValue = getFinanceDisplayValue(editForm);
                       return (
                         <div key={cost.id} className="flex items-center justify-between gap-3 p-3.5 bg-white border border-gray-100 rounded-2xl hover:shadow-sm transition-all cursor-pointer group"
                           onClick={() => {
-                            if (cost.type === 'finance') setInnerEditingCost({ ...cost, apport: editForm.metadata.apport, interestRate: editForm.metadata.interestRate, duration: editForm.metadata.duration, note: (editForm.costNotes || {})[cost.id] || '' });
+                            if (cost.type === 'finance') setInnerEditingCost({ ...cost, apport: editForm.metadata.apport, interestRate: editForm.metadata.interestRate, duration: editForm.metadata.duration, financeManual: editForm.metadata.financeManual || false, financeManualAmount: editForm.metadata.financeManualAmount || 0, note: (editForm.costNotes || {})[cost.id] || '' });
                             else if (cost.type === 'agence') setInnerEditingCost({ ...cost, agenceRate: editForm.metadata.agenceRate, note: (editForm.costNotes || {})[cost.id] || '' });
                             else if (cost.type === 'notaire') setInnerEditingCost({ ...cost, isNotaireReduced: editForm.metadata.isNotaireReduced, note: (editForm.costNotes || {})[cost.id] || '' });
                             else setInnerEditingCost({ ...cost, currentValue: editForm.costValues[cost.id] || 0, note: (editForm.costNotes || {})[cost.id] || '' });
@@ -488,7 +507,8 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                               <div className="flex items-center gap-2">
                                 {cost.type === 'notaire' && <span className="text-[9px] text-gray-400 font-bold uppercase">{editForm.metadata.isNotaireReduced ? 'Frais réduits (3%)' : 'Standard (8%)'}</span>}
                                 {cost.type === 'agence' && <span className="text-[9px] text-gray-400 font-bold uppercase">Taux : {editForm.metadata.agenceRate}%</span>}
-                                {cost.type === 'finance' && <span className="text-[9px] text-gray-400 font-bold uppercase">{editForm.metadata.interestRate}% — {editForm.metadata.duration} mois</span>}
+                                {cost.type === 'finance' && !editForm.metadata.financeManual && <span className="text-[9px] text-gray-400 font-bold uppercase">{editForm.metadata.interestRate}% — {editForm.metadata.duration} mois</span>}
+                                {cost.type === 'finance' && editForm.metadata.financeManual && <span className="text-[9px] text-orange-400 font-bold uppercase flex items-center gap-1"><PencilLine className="w-2.5 h-2.5" />Montant manuel</span>}
                               </div>
                             </div>
                           </div>
@@ -527,44 +547,105 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
 
       {innerEditingCost && (
         <Dialog open={!!innerEditingCost} onOpenChange={(open) => !open && setInnerEditingCost(null)}>
-          <DialogContent className="w-[calc(100%-2rem)] rounded-2xl p-4 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain z-[100] sm:max-w-[425px] sm:w-auto sm:rounded-[2rem] sm:max-h-[90vh] sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <DialogContent className="w-[calc(100%-2rem)] rounded-2xl p-4 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain z-[100] sm:rounded-[2rem] sm:max-h-[90vh] sm:p-8 sm:max-w-[680px] sm:w-[680px]">
+            <DialogHeader className="mb-2">
+              <DialogTitle className="flex items-center gap-2 text-lg font-black">
                 {innerEditingCost?.type === 'finance' ? <Calculator className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
                 {innerEditingCost?.label}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-4">
+            <form onSubmit={handleInnerCostUpdate} className="space-y-6 py-2">
               {innerEditingCost?.type === 'finance' ? (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 bg-black text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-black/10">
-                      <div className="flex items-center gap-2 opacity-60"><Banknote className="w-3 h-3" /><span className="text-[9px] font-bold uppercase tracking-widest">Financé</span></div>
-                      <span className="text-sm font-black">{formatEuro(calculateLiveFinanced())}</span>
-                    </div>
-                    <div className="p-4 bg-blue-600 text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-blue-900/20">
-                      <div className="flex items-center gap-2 opacity-60"><Coins className="w-3 h-3" /><span className="text-[9px] font-bold uppercase tracking-widest">Intérêts</span></div>
-                      <span className="text-sm font-black">{formatEuro(calculateLiveFees())}</span>
-                    </div>
+                  {/* Toggle Manuel / Automatique */}
+                  <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setInnerEditingCost({ ...innerEditingCost, financeManual: false })}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all",
+                        !innerEditingCost.financeManual
+                          ? "bg-white text-black shadow-sm"
+                          : "text-gray-400 hover:text-gray-600"
+                      )}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Automatique
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInnerEditingCost({ ...innerEditingCost, financeManual: true })}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all",
+                        innerEditingCost.financeManual
+                          ? "bg-white text-black shadow-sm"
+                          : "text-gray-400 hover:text-gray-600"
+                      )}
+                    >
+                      <PencilLine className="w-3.5 h-3.5" />
+                      Manuel
+                    </button>
                   </div>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
-                      <Input type="number" className="rounded-xl h-11" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({ ...innerEditingCost, duration: Number(e.target.value) })} autoFocus={false} />
+
+                  {innerEditingCost.financeManual ? (
+                    /* MODE MANUEL */
+                    <div className="space-y-5">
+                      <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl">
+                        <p className="text-xs text-orange-600 font-bold">En mode manuel, vous saisissez directement le montant total des frais financiers sans calcul automatique.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400">
+                          <Coins className="w-3 h-3" /> Montant des frais financiers (€)
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            className="rounded-xl h-12 text-base font-bold pr-8"
+                            value={innerEditingCost.financeManualAmount}
+                            onChange={e => setInnerEditingCost({ ...innerEditingCost, financeManualAmount: Number(e.target.value) })}
+                            autoFocus={false}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-bold">€</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
+                        <Textarea value={innerEditingCost.note} onChange={e => setInnerEditingCost({ ...innerEditingCost, note: e.target.value })} autoFocus={false} className="resize-none h-20" placeholder="Ajouter une note..." />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
-                      <Input type="number" className="rounded-xl border-black/20 focus:ring-black h-11" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({ ...innerEditingCost, apport: Number(e.target.value) })} autoFocus={false} />
+                  ) : (
+                    /* MODE AUTOMATIQUE */
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 bg-black text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-black/10">
+                          <div className="flex items-center gap-2 opacity-60"><Banknote className="w-3 h-3" /><span className="text-[9px] font-bold uppercase tracking-widest">Financé</span></div>
+                          <span className="text-sm font-black">{formatEuro(calculateLiveFinanced())}</span>
+                        </div>
+                        <div className="p-4 bg-blue-600 text-white rounded-2xl flex flex-col gap-1 shadow-xl shadow-blue-900/20">
+                          <div className="flex items-center gap-2 opacity-60"><Coins className="w-3 h-3" /><span className="text-[9px] font-bold uppercase tracking-widest">Intérêts estimés</span></div>
+                          <span className="text-sm font-black">{formatEuro(calculateLiveFees())}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Clock className="w-3 h-3" /> Durée de portage (mois)</Label>
+                          <Input type="number" className="rounded-xl h-11" value={innerEditingCost.duration} onChange={e => setInnerEditingCost({ ...innerEditingCost, duration: Number(e.target.value) })} autoFocus={false} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Wallet className="w-3 h-3" /> Apport personnel (€)</Label>
+                          <Input type="number" className="rounded-xl border-black/20 focus:ring-black h-11" value={innerEditingCost.apport} onChange={e => setInnerEditingCost({ ...innerEditingCost, apport: Number(e.target.value) })} autoFocus={false} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
+                          <Input type="number" step="0.1" className="rounded-xl h-11" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, interestRate: Number(e.target.value) })} autoFocus={false} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
+                        <Textarea value={innerEditingCost.note} onChange={e => setInnerEditingCost({ ...innerEditingCost, note: e.target.value })} autoFocus={false} className="resize-none h-20" placeholder="Ajouter une note..." />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400"><Percent className="w-3 h-3" /> Taux annuel d'emprunt (%)</Label>
-                      <Input type="number" step="0.1" className="rounded-xl h-11" value={innerEditingCost.interestRate} onChange={e => setInnerEditingCost({ ...innerEditingCost, interestRate: Number(e.target.value) })} autoFocus={false} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-gray-400">Note (optionnel)</Label>
-                      <Textarea value={innerEditingCost.note} onChange={e => setInnerEditingCost({ ...innerEditingCost, note: e.target.value })} autoFocus={false} className="resize-none h-20" placeholder="Ajouter une note..." />
-                    </div>
-                  </div>
+                  )}
                 </div>
               ) : innerEditingCost?.type === 'agence' ? (
                 <div className="space-y-4">
@@ -603,7 +684,7 @@ const SalesScenarios = ({ scenarios, lots, costs, onUpdate, onDeleteScenario, on
                   </div>
                 </div>
               )}
-              <DialogFooter className="flex-col sm:flex-row gap-2">
+              <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
                 {!['notaire', 'agence', 'finance', 'acquisition', 'travaux'].includes(innerEditingCost?.type) && (
                   <button type="button" onClick={() => { setEditForm({ ...editForm, costValues: Object.fromEntries(Object.entries(editForm.costValues).filter(([id]) => id !== innerEditingCost.id)) }); setInnerEditingCost(null); }} className="flex items-center justify-center gap-2 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors">
                     <Trash2 className="w-4 h-4" />Supprimer
