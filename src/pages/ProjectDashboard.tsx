@@ -173,8 +173,17 @@ const ProjectDashboard = () => {
     const agencePrice = Math.round(acqPrice * ((scenario.agenceRate || 0) / 100));
 
     const totalCostsExclFinance = acqPrice + travauxPrice + otherCosts + notairePrice + agencePrice;
-    const totalFinanced = Math.max(0, totalCostsExclFinance - (scenario.apport || 0));
-    const financialFees = Math.round(totalFinanced * (scenario.duration || 0) * ((scenario.interestRate || 0) / 100 / 12));
+
+    // Frais financiers : mode manuel ou automatique
+    let financialFees: number;
+    if (scenario.financeManual) {
+      financialFees = scenario.financeManualAmount || 0;
+    } else {
+      const totalFinanced = Math.max(0, totalCostsExclFinance - (scenario.apport || 0));
+      financialFees = Math.round(totalFinanced * (scenario.duration || 0) * ((scenario.interestRate || 0) / 100 / 12));
+    }
+
+    const totalFinancedForDisplay = Math.max(0, totalCostsExclFinance - (scenario.apport || 0));
 
     const costTotal = totalCostsExclFinance + financialFees;
     const margin = caTotal - costTotal;
@@ -189,7 +198,7 @@ const ProjectDashboard = () => {
         notaire: notairePrice,
         agence: agencePrice,
         finance: financialFees,
-        totalFinanced
+        totalFinanced: totalFinancedForDisplay
       }
     };
   };
