@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
+import ProspectChecklist from '@/components/ProspectChecklist';
+import { ChecklistItem } from '@/types/checklist';
 import { 
   Plus, 
   Phone, 
@@ -47,6 +49,7 @@ interface Prospect {
   link: string;
   status: "À appeler" | "À visiter" | "À étudier" | "En attente";
   created_at?: string;
+  checklist?: ChecklistItem[];
 }
 
 const statusConfig: Record<Prospect['status'], {
@@ -100,6 +103,7 @@ const Prospection = () => {
   const migrateOldStatuses = (prospects: any[]): Prospect[] => {
     return prospects.map(p => ({
       ...p,
+      checklist: p.checklist ?? [],
       status: 
         p.status === 'À appeler' ? 'À appeler' :
         p.status === 'Sans suite' ? 'En attente' :
@@ -152,7 +156,8 @@ const Prospection = () => {
       const newProspect: Prospect = {
         ...formData,
         id: `prospect_${Date.now()}`,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        checklist: []
       };
       saveToLocal([newProspect, ...prospects]);
       setIsAddOpen(false);
@@ -164,12 +169,12 @@ const Prospection = () => {
     try {
       const { data, error } = await supabase
         .from('prospects')
-        .insert([formData])
+        .insert([{ ...formData, checklist: [] }])
         .select();
 
       if (error) throw error;
       
-      setProspects([data[0], ...prospects]);
+      setProspects([{ ...data[0], checklist: [] }, ...prospects]);
       setIsAddOpen(false);
       setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
       showSuccess("Prospect ajouté avec succès");
@@ -198,7 +203,8 @@ const Prospection = () => {
           phone: editingProspect.phone,
           notes: editingProspect.notes,
           link: editingProspect.link,
-          status: editingProspect.status
+          status: editingProspect.status,
+          checklist: editingProspect.checklist ?? []
         })
         .eq('id', editingProspect.id);
 
@@ -346,6 +352,8 @@ const Prospection = () => {
             {filteredProspects.map((prospect) => {
               const cfg = statusConfig[prospect.status] ?? statusConfig["En attente"];
               const StatusIcon = cfg.icon;
+              const checklistTotal = prospect.checklist?.length ?? 0;
+              const checklistDone = prospect.checklist?.filter(i => i.checked).length ?? 0;
               return (
                 <div 
                   key={prospect.id}
@@ -369,13 +377,28 @@ const Prospection = () => {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50/50 rounded-2xl p-4 mb-6">
+                  <div className="bg-gray-50/50 rounded-2xl p-4 mb-4">
                     <p className="text-sm text-gray-600 line-clamp-3 min-h-[60px]">
                       {prospect.notes || "Aucune note particulière..."}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-50 gap-3">
+                  {checklistTotal > 0 && (
+                    <div className="mb-4 px-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Checklist</span>
+                        <span className="text-[10px] font-bold text-gray-400">{checklistDone}/{checklistTotal}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-50 gap-3">
                     {prospect.link && (
                       <a 
                         href={prospect.link.startsWith('http') ? prospect.link : `https://${prospect.link}`} 
@@ -564,6 +587,15 @@ const Prospection = () => {
                       className="rounded-xl min-h-[120px]"
                     />
                   </div>
+
+                  {/* ——— CHECKLIST ——— */}
+                  <div className="bg-gray-50/60 rounded-2xl p-5">
+                    <ProspectChecklist
+                      items={editingProspect.checklist ?? []}
+                      onChange={(items) => setEditingProspect({ ...editingProspect, checklist: items })}
+                    />
+                  </div>
+
                   <DialogFooter className="pt-4 flex gap-3">
                     <button 
                       onClick={() => setEditingProspect(null)}
