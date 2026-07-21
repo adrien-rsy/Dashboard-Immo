@@ -17,7 +17,8 @@ import {
   X,
   MapPin,
   Clock,
-  Pencil
+  Pencil,
+  Euro
 } from 'lucide-react';
 import {
   Dialog,
@@ -48,6 +49,8 @@ interface Prospect {
   notes: string;
   link: string;
   status: "À appeler" | "À visiter" | "À étudier" | "En attente";
+  prix?: string;
+  ville?: string;
   created_at?: string;
   checklist?: ChecklistItem[];
 }
@@ -79,6 +82,13 @@ const statusConfig: Record<Prospect['status'], {
   },
 };
 
+const formatPrix = (prix?: string) => {
+  if (!prix) return null;
+  const num = parseInt(prix.replace(/\s/g, '').replace(/[^0-9]/g, ''));
+  if (isNaN(num)) return prix;
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
+};
+
 const Prospection = () => {
   const navigate = useNavigate();
   const [prospects, setProspects] = useState<Prospect[]>([]);
@@ -93,6 +103,8 @@ const Prospection = () => {
     phone: '',
     notes: '',
     link: '',
+    prix: '',
+    ville: '',
     status: 'À appeler' as Prospect['status']
   });
 
@@ -104,6 +116,8 @@ const Prospection = () => {
     return prospects.map(p => ({
       ...p,
       checklist: p.checklist ?? [],
+      prix: p.prix ?? '',
+      ville: p.ville ?? '',
       status: 
         p.status === 'À appeler' ? 'À appeler' :
         p.status === 'Sans suite' ? 'En attente' :
@@ -161,7 +175,7 @@ const Prospection = () => {
       };
       saveToLocal([newProspect, ...prospects]);
       setIsAddOpen(false);
-      setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À appeler' });
       showSuccess("Prospect ajouté avec succès (Local)");
       return;
     }
@@ -176,7 +190,7 @@ const Prospection = () => {
       
       setProspects([{ ...data[0], checklist: [] }, ...prospects]);
       setIsAddOpen(false);
-      setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À appeler' });
       showSuccess("Prospect ajouté avec succès");
     } catch (error) {
       console.error('Error adding prospect:', error);
@@ -204,6 +218,8 @@ const Prospection = () => {
           notes: editingProspect.notes,
           link: editingProspect.link,
           status: editingProspect.status,
+          prix: editingProspect.prix ?? '',
+          ville: editingProspect.ville ?? '',
           checklist: editingProspect.checklist ?? []
         })
         .eq('id', editingProspect.id);
@@ -271,9 +287,9 @@ const Prospection = () => {
     e.stopPropagation();
     localStorage.setItem('prospection_conversion', JSON.stringify({
       title: prospect.title || `Projet - ${prospect.phone}`,
-      address: '',
+      address: prospect.ville || '',
       lotCount: '1',
-      acqPrice: '',
+      acqPrice: prospect.prix || '',
       travauxPrice: '',
       notes: prospect.notes
     }));
@@ -291,7 +307,8 @@ const Prospection = () => {
   const filteredProspects = prospects.filter(p => 
     (p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone.includes(searchTerm) || 
-    p.notes.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    p.notes.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.ville || '').toLowerCase().includes(searchTerm.toLowerCase())) &&
     selectedStatuses.includes(p.status)
   );
 
@@ -319,7 +336,7 @@ const Prospection = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Rechercher par titre, téléphone ou notes..."
+              placeholder="Rechercher par titre, ville, téléphone ou notes..."
               className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-black transition-all"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -354,15 +371,16 @@ const Prospection = () => {
               const StatusIcon = cfg.icon;
               const checklistTotal = prospect.checklist?.length ?? 0;
               const checklistDone = prospect.checklist?.filter(i => i.checked).length ?? 0;
+              const prixFormate = formatPrix(prospect.prix);
               return (
                 <div 
                   key={prospect.id}
                   onClick={() => setEditingProspect(prospect)}
                   className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-100 relative cursor-pointer"
                 >
-                  <div className="flex items-center gap-4 mb-6">
+                  <div className="flex items-center gap-4 mb-5">
                     <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors flex-shrink-0",
                       cfg.bg,
                       cfg.text
                     )}>
@@ -370,11 +388,33 @@ const Prospection = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold leading-tight truncate">{prospect.title || "Sans titre"}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500 font-bold">{prospect.phone || 'Non renseigné'}</span>
-                      </div>
                     </div>
+                  </div>
+
+                  {/* Prix + Ville */}
+                  <div className="flex items-center gap-2 mb-5 flex-wrap">
+                    {prixFormate ? (
+                      <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 rounded-xl px-3 py-1.5">
+                        <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs font-bold">{prixFormate}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 bg-gray-50 text-gray-400 rounded-xl px-3 py-1.5">
+                        <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs font-medium">Prix non renseigné</span>
+                      </div>
+                    )}
+                    {prospect.ville ? (
+                      <div className="flex items-center gap-1.5 bg-blue-50 text-blue-600 rounded-xl px-3 py-1.5 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs font-bold truncate">{prospect.ville}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 bg-gray-50 text-gray-400 rounded-xl px-3 py-1.5">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs font-medium">Ville non renseignée</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-gray-50/50 rounded-2xl p-4 mb-4">
@@ -459,6 +499,35 @@ const Prospection = () => {
                 className="rounded-xl"
               />
             </div>
+
+            {/* Prix + Ville */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
+                <div className="relative">
+                  <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="ex: 180000"
+                    value={formData.prix} 
+                    onChange={e => setFormData({...formData, prix: e.target.value})}
+                    className="rounded-xl pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="ex: Dijon"
+                    value={formData.ville} 
+                    onChange={e => setFormData({...formData, ville: e.target.value})}
+                    className="rounded-xl pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
               <Input 
@@ -532,6 +601,35 @@ const Prospection = () => {
                       className="rounded-xl"
                     />
                   </div>
+
+                  {/* Prix + Ville */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
+                      <div className="relative">
+                        <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input 
+                          placeholder="ex: 180000"
+                          value={editingProspect.prix ?? ''} 
+                          onChange={e => setEditingProspect({...editingProspect, prix: e.target.value})}
+                          className="rounded-xl pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input 
+                          placeholder="ex: Dijon"
+                          value={editingProspect.ville ?? ''} 
+                          onChange={e => setEditingProspect({...editingProspect, ville: e.target.value})}
+                          className="rounded-xl pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
@@ -559,6 +657,7 @@ const Prospection = () => {
                       </Select>
                     </div>
                   </div>
+
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
                     <div className="flex gap-2">
