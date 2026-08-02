@@ -392,15 +392,17 @@ const Prospection = () => {
   };
 
   // ——— KANBAN VIEW ———
+  // Les colonnes s'étirent à leur hauteur naturelle (pas de scroll interne).
+  // Le scroll se fait sur la page entière via le conteneur parent overflow-y-auto.
   const KanbanView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 h-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
       {KANBAN_COLUMNS.map((colStatus) => {
         const cfg = statusConfig[colStatus];
         const StatusIcon = cfg.icon;
         const colProspects = filteredProspects.filter(p => p.status === colStatus);
 
         return (
-          <div key={colStatus} className="flex flex-col min-h-[400px]">
+          <div key={colStatus} className="flex flex-col">
             {/* Column header */}
             <div className={cn(
               "flex items-center justify-between px-4 py-3 rounded-2xl border mb-3",
@@ -420,10 +422,10 @@ const Prospection = () => {
               </span>
             </div>
 
-            {/* Cards */}
-            <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-0.5">
+            {/* Cards — pas de overflow-y-auto, hauteur naturelle */}
+            <div className="flex flex-col gap-3">
               {colProspects.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-12">
                   <p className="text-xs text-gray-300 font-medium text-center">Aucun prospect</p>
                 </div>
               ) : (
@@ -439,11 +441,11 @@ const Prospection = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#F4F5F7] text-gray-900 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-[#F4F5F7] text-gray-900 font-sans">
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className="flex-1 flex flex-col">
         <TopBar />
-        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-0 pb-12">
+        <div className="flex-1 px-4 md:px-10 py-6 md:py-0 pb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 md:mb-10 md:mt-8">
             <div>
               <h1 className="text-4xl font-black tracking-tight mb-2">Prospection</h1>
