@@ -102,6 +102,6 @@
 
   body {
     @apply bg-background text-foreground;
-    overflow: hidden;
+    /* overflow: hidden supprimé — le scroll de page doit rester actif */
   }
 }
