@@ -392,8 +392,8 @@ const Prospection = () => {
   };
 
   // ——— KANBAN VIEW ———
-  // Les colonnes s'étirent à leur hauteur naturelle (pas de scroll interne).
-  // Le scroll se fait sur la page entière via le conteneur parent overflow-y-auto.
+  // Colonnes en hauteur naturelle, pas de scroll interne.
+  // Le scroll se fait sur la page entière via le body/html.
   const KanbanView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
       {KANBAN_COLUMNS.map((colStatus) => {
@@ -422,7 +422,7 @@ const Prospection = () => {
               </span>
             </div>
 
-            {/* Cards — pas de overflow-y-auto, hauteur naturelle */}
+            {/* Cards — hauteur naturelle, pas de overflow-y-auto */}
             <div className="flex flex-col gap-3">
               {colProspects.length === 0 ? (
                 <div className="flex items-center justify-center py-12">
@@ -443,9 +443,10 @@ const Prospection = () => {
   return (
     <div className="flex min-h-screen bg-[#F4F5F7] text-gray-900 font-sans">
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
-      <main className="flex-1 flex flex-col">
+      {/* main sans flex-1 flex flex-col pour ne pas piéger le scroll */}
+      <main className="flex-1 min-w-0">
         <TopBar />
-        <div className="flex-1 px-4 md:px-10 py-6 md:py-0 pb-12">
+        <div className="px-4 md:px-10 py-6 md:py-0 pb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 md:mb-10 md:mt-8">
             <div>
               <h1 className="text-4xl font-black tracking-tight mb-2">Prospection</h1>
