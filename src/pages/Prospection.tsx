@@ -20,7 +20,8 @@ import {
   Pencil,
   Euro,
   LayoutGrid,
-  Columns3
+  Columns3,
+  Handshake
 } from 'lucide-react';
 import {
   Dialog,
@@ -50,7 +51,7 @@ interface Prospect {
   phone: string;
   notes: string;
   link: string;
-  status: "À appeler" | "À visiter" | "À étudier" | "En attente";
+  status: "À étudier" | "À appeler" | "À visiter" | "À négocier" | "En attente";
   prix?: string;
   ville?: string;
   created_at?: string;
@@ -66,6 +67,13 @@ const statusConfig: Record<Prospect['status'], {
   border: string;
   header: string;
 }> = {
+  "À étudier": {
+    icon: Search,
+    bg: "bg-emerald-50",
+    text: "text-emerald-600",
+    border: "border-emerald-100",
+    header: "bg-emerald-50 border-emerald-100",
+  },
   "À appeler": {
     icon: Phone,
     bg: "bg-blue-50",
@@ -80,6 +88,13 @@ const statusConfig: Record<Prospect['status'], {
     border: "border-violet-100",
     header: "bg-violet-50 border-violet-100",
   },
+  "À négocier": {
+    icon: Handshake,
+    bg: "bg-amber-50",
+    text: "text-amber-600",
+    border: "border-amber-100",
+    header: "bg-amber-50 border-amber-100",
+  },
   "En attente": {
     icon: Clock,
     bg: "bg-orange-50",
@@ -87,16 +102,9 @@ const statusConfig: Record<Prospect['status'], {
     border: "border-orange-100",
     header: "bg-orange-50 border-orange-100",
   },
-  "À étudier": {
-    icon: Search,
-    bg: "bg-emerald-50",
-    text: "text-emerald-600",
-    border: "border-emerald-100",
-    header: "bg-emerald-50 border-emerald-100",
-  },
 };
 
-const KANBAN_COLUMNS: Prospect['status'][] = ["À appeler", "À étudier", "À visiter", "En attente"];
+const KANBAN_COLUMNS: Prospect['status'][] = ["À étudier", "À appeler", "À visiter", "À négocier", "En attente"];
 
 const formatPrix = (prix?: string) => {
   if (!prix) return null;
@@ -121,7 +129,7 @@ const Prospection = () => {
     link: '',
     prix: '',
     ville: '',
-    status: 'À appeler' as Prospect['status']
+    status: 'À étudier' as Prospect['status']
   });
 
   useEffect(() => {
@@ -136,11 +144,14 @@ const Prospection = () => {
       ville: p.ville ?? '',
       status: 
         p.status === 'À appeler' ? 'À appeler' :
+        p.status === 'À visiter' ? 'À visiter' :
+        p.status === 'À étudier' ? 'À étudier' :
+        p.status === 'À négocier' ? 'À négocier' :
         p.status === 'Sans suite' ? 'En attente' :
         p.status === 'A Appeler' ? 'À appeler' :
         p.status === 'A visiter' ? 'À visiter' :
         p.status === 'A etudier' ? 'À étudier' :
-        p.status
+        'En attente'
     }));
   };
 
@@ -191,7 +202,7 @@ const Prospection = () => {
       };
       saveToLocal([newProspect, ...prospects]);
       setIsAddOpen(false);
-      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À appeler' });
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À étudier' });
       showSuccess("Prospect ajouté avec succès (Local)");
       return;
     }
@@ -206,7 +217,7 @@ const Prospection = () => {
       
       setProspects([{ ...data[0], checklist: [] }, ...prospects]);
       setIsAddOpen(false);
-      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À appeler' });
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À étudier' });
       showSuccess("Prospect ajouté avec succès");
     } catch (error) {
       console.error('Error adding prospect:', error);
@@ -392,10 +403,8 @@ const Prospection = () => {
   };
 
   // ——— KANBAN VIEW ———
-  // Colonnes en hauteur naturelle, pas de scroll interne.
-  // Le scroll se fait sur la page entière via le body/html.
   const KanbanView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 items-start">
       {KANBAN_COLUMNS.map((colStatus) => {
         const cfg = statusConfig[colStatus];
         const StatusIcon = cfg.icon;
@@ -422,7 +431,7 @@ const Prospection = () => {
               </span>
             </div>
 
-            {/* Cards — hauteur naturelle, pas de overflow-y-auto */}
+            {/* Cards */}
             <div className="flex flex-col gap-3">
               {colProspects.length === 0 ? (
                 <div className="flex items-center justify-center py-12">
@@ -443,7 +452,6 @@ const Prospection = () => {
   return (
     <div className="flex min-h-screen bg-[#F4F5F7] text-gray-900 font-sans">
       <Sidebar className="hidden lg:flex border-r border-gray-100" />
-      {/* main sans flex-1 flex flex-col pour ne pas piéger le scroll */}
       <main className="flex-1 min-w-0">
         <TopBar />
         <div className="px-4 md:px-10 py-6 md:py-0 pb-12">
@@ -601,9 +609,10 @@ const Prospection = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
+                          <SelectItem value="À étudier">À étudier</SelectItem>
                           <SelectItem value="À appeler">À appeler</SelectItem>
                           <SelectItem value="À visiter">À visiter</SelectItem>
-                          <SelectItem value="À étudier">À étudier</SelectItem>
+                          <SelectItem value="À négocier">À négocier</SelectItem>
                           <SelectItem value="En attente">En attente</SelectItem>
                         </SelectContent>
                       </Select>
@@ -679,6 +688,24 @@ const Prospection = () => {
                 onChange={e => setFormData({...formData, phone: e.target.value})}
                 className="rounded-xl"
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(val: Prospect['status']) => setFormData({...formData, status: val})}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="À étudier">À étudier</SelectItem>
+                  <SelectItem value="À appeler">À appeler</SelectItem>
+                  <SelectItem value="À visiter">À visiter</SelectItem>
+                  <SelectItem value="À négocier">À négocier</SelectItem>
+                  <SelectItem value="En attente">En attente</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
@@ -792,9 +819,10 @@ const Prospection = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
+                          <SelectItem value="À étudier">À étudier</SelectItem>
                           <SelectItem value="À appeler">À appeler</SelectItem>
                           <SelectItem value="À visiter">À visiter</SelectItem>
-                          <SelectItem value="À étudier">À étudier</SelectItem>
+                          <SelectItem value="À négocier">À négocier</SelectItem>
                           <SelectItem value="En attente">En attente</SelectItem>
                         </SelectContent>
                       </Select>
