@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
@@ -121,6 +121,12 @@ const Prospection = () => {
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('gallery');
+
+  // Drag & drop state
+  const dragIdRef = useRef<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<Prospect['status'] | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after'>('after');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -323,6 +329,103 @@ const Prospection = () => {
     navigate('/projects');
   };
 
+  // ——— DRAG & DROP HANDLERS ———
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    dragIdRef.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+    // Delay so the ghost image is set before we style the dragging element
+    setTimeout(() => {
+      const el = document.getElementById(`prospect-card-${id}`);
+      if (el) el.style.opacity = '0.4';
+    }, 0);
+  };
+
+  const handleDragEnd = (id: string) => {
+    dragIdRef.current = null;
+    setDragOverColumn(null);
+    setDropTargetId(null);
+    const el = document.getElementById(`prospect-card-${id}`);
+    if (el) el.style.opacity = '1';
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent, colStatus: Prospect['status']) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(colStatus);
+  };
+
+  const handleColumnDragLeave = (e: React.DragEvent, colStatus: Prospect['status']) => {
+    // Only clear if leaving the column wrapper itself
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      if (dragOverColumn === colStatus) setDragOverColumn(null);
+    }
+  };
+
+  const handleCardDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    setDropTargetId(targetId);
+    setDropPosition(e.clientY < midY ? 'before' : 'after');
+  };
+
+  const handleDrop = async (e: React.DragEvent, colStatus: Prospect['status']) => {
+    e.preventDefault();
+    const id = dragIdRef.current;
+    if (!id) return;
+
+    setDragOverColumn(null);
+    setDropTargetId(null);
+
+    const dragged = prospects.find(p => p.id === id);
+    if (!dragged) return;
+
+    // Build new ordered list
+    const withoutDragged = prospects.filter(p => p.id !== id);
+    const newStatus = colStatus;
+
+    let newList: Prospect[];
+
+    if (dropTargetId && dropTargetId !== id) {
+      const targetIdx = withoutDragged.findIndex(p => p.id === dropTargetId);
+      const insertIdx = dropPosition === 'before' ? targetIdx : targetIdx + 1;
+      const updated = { ...dragged, status: newStatus };
+      newList = [
+        ...withoutDragged.slice(0, insertIdx),
+        updated,
+        ...withoutDragged.slice(insertIdx),
+      ];
+    } else {
+      // Drop on empty column or no specific target → append at end of column
+      const colProspects = withoutDragged.filter(p => p.status === newStatus);
+      const lastColIdx = withoutDragged.findLastIndex(p => p.status === newStatus);
+      const updated = { ...dragged, status: newStatus };
+      if (lastColIdx === -1) {
+        newList = [...withoutDragged, updated];
+      } else {
+        newList = [
+          ...withoutDragged.slice(0, lastColIdx + 1),
+          updated,
+          ...withoutDragged.slice(lastColIdx + 1),
+        ];
+      }
+    }
+
+    setProspects(newList);
+    if (!isSupabaseConfigured()) {
+      localStorage.setItem('immo_prospects_v2', JSON.stringify(newList));
+    }
+
+    // Persist status change if needed
+    if (dragged.status !== newStatus) {
+      if (isSupabaseConfigured()) {
+        await supabase.from('prospects').update({ status: newStatus }).eq('id', id);
+      }
+    }
+  };
+
   const filteredProspects = prospects.filter(p => 
     (p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone.includes(searchTerm) || 
@@ -337,11 +440,25 @@ const Prospection = () => {
     const prixFormate = formatPrix(prospect.prix);
     const checklistTotal = prospect.checklist?.length ?? 0;
     const checklistDone = prospect.checklist?.filter(i => i.checked).length ?? 0;
+    const isDropTarget = dropTargetId === prospect.id;
 
     return (
       <div
+        id={`prospect-card-${prospect.id}`}
+        draggable
+        onDragStart={(e) => handleDragStart(e, prospect.id)}
+        onDragEnd={() => handleDragEnd(prospect.id)}
+        onDragOver={(e) => handleCardDragOver(e, prospect.id)}
+        onDrop={(e) => handleDrop(e, prospect.status)}
+        className={cn(
+          "relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border cursor-grab active:cursor-grabbing group active:scale-[0.99]",
+          isDropTarget && dropPosition === 'before'
+            ? "border-blue-400 border-t-[3px]"
+            : isDropTarget && dropPosition === 'after'
+            ? "border-blue-400 border-b-[3px]"
+            : "border-gray-100"
+        )}
         onClick={() => setEditingProspect(prospect)}
-        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100 cursor-pointer group active:scale-[0.99]"
       >
         <div className="flex items-start gap-3 mb-3">
           <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5", cfg.bg, cfg.text)}>
@@ -409,9 +526,16 @@ const Prospection = () => {
         const cfg = statusConfig[colStatus];
         const StatusIcon = cfg.icon;
         const colProspects = filteredProspects.filter(p => p.status === colStatus);
+        const isOver = dragOverColumn === colStatus;
 
         return (
-          <div key={colStatus} className="flex flex-col">
+          <div
+            key={colStatus}
+            className="flex flex-col"
+            onDragOver={(e) => handleColumnDragOver(e, colStatus)}
+            onDragLeave={(e) => handleColumnDragLeave(e, colStatus)}
+            onDrop={(e) => handleDrop(e, colStatus)}
+          >
             {/* Column header */}
             <div className={cn(
               "flex items-center justify-between px-4 py-3 rounded-2xl border mb-3",
@@ -431,11 +555,23 @@ const Prospection = () => {
               </span>
             </div>
 
-            {/* Cards */}
-            <div className="flex flex-col gap-3">
+            {/* Cards container */}
+            <div
+              className={cn(
+                "flex flex-col gap-3 min-h-[80px] rounded-2xl transition-all duration-150 p-1",
+                isOver && colProspects.length === 0
+                  ? "bg-blue-50/60 ring-2 ring-blue-200 ring-dashed"
+                  : ""
+              )}
+            >
               {colProspects.length === 0 ? (
                 <div className="flex items-center justify-center py-12">
-                  <p className="text-xs text-gray-300 font-medium text-center">Aucun prospect</p>
+                  <p className={cn(
+                    "text-xs font-medium text-center transition-all",
+                    isOver ? "text-blue-400" : "text-gray-300"
+                  )}>
+                    {isOver ? "Déposer ici" : "Aucun prospect"}
+                  </p>
                 </div>
               ) : (
                 colProspects.map(prospect => (
