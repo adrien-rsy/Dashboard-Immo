@@ -121,29 +121,34 @@ const ProspectChiffrage: React.FC<Props> = ({ data, onChange }) => {
         {data.lots.length > 0 && (
           <div className="space-y-2">
             {data.lots.map(lot => (
-              <div key={lot.id} className="group flex items-center gap-2">
-                <input
-                  type="text"
-                  value={lot.nom}
-                  onChange={e => updateLot(lot.id, 'nom', e.target.value)}
-                  placeholder="Nom du lot"
-                  className="flex-1 bg-white border border-gray-100 rounded-xl text-base sm:text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
-                />
-                <div className="relative w-36">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">€</span>
+              <div
+                key={lot.id}
+                className="group flex flex-col sm:flex-row sm:items-center gap-2"
+              >
+                <div className="flex flex-col sm:flex-row sm:flex-1 sm:items-center gap-2">
                   <input
-                    type="number"
-                    min={0}
-                    value={lot.prix === '' ? '' : lot.prix}
-                    onChange={e => updateLot(lot.id, 'prix', e.target.value === '' ? '' : parseFloat(e.target.value))}
-                    placeholder="0"
-                    className="w-full bg-white border border-gray-100 rounded-xl text-base sm:text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+                    type="text"
+                    value={lot.nom}
+                    onChange={e => updateLot(lot.id, 'nom', e.target.value)}
+                    placeholder="Nom du lot"
+                    className="flex-1 bg-white border border-gray-100 rounded-xl text-base sm:text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
                   />
+                  <div className="relative w-full sm:w-36">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">€</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={lot.prix === '' ? '' : lot.prix}
+                      onChange={e => updateLot(lot.id, 'prix', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      placeholder="0"
+                      className="w-full bg-white border border-gray-100 rounded-xl text-base sm:text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+                    />
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeLot(lot.id)}
-                  className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all self-end sm:self-auto"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
