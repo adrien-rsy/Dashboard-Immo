@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import ProspectChecklist from '@/components/ProspectChecklist';
+import ProspectChiffrage, { ChiffrageData, defaultChiffrage } from '@/components/ProspectChiffrage';
 import { ChecklistItem } from '@/types/checklist';
 import { 
   Plus, 
@@ -56,6 +57,7 @@ interface Prospect {
   ville?: string;
   created_at?: string;
   checklist?: ChecklistItem[];
+  chiffrage?: ChiffrageData;
 }
 
 type ViewMode = 'gallery' | 'kanban';
@@ -146,6 +148,7 @@ const Prospection = () => {
     return prospects.map(p => ({
       ...p,
       checklist: p.checklist ?? [],
+      chiffrage: p.chiffrage ?? defaultChiffrage(),
       prix: p.prix ?? '',
       ville: p.ville ?? '',
       status: 
@@ -204,7 +207,8 @@ const Prospection = () => {
         ...formData,
         id: `prospect_${Date.now()}`,
         created_at: new Date().toISOString(),
-        checklist: []
+        checklist: [],
+        chiffrage: defaultChiffrage()
       };
       saveToLocal([newProspect, ...prospects]);
       setIsAddOpen(false);
@@ -216,12 +220,12 @@ const Prospection = () => {
     try {
       const { data, error } = await supabase
         .from('prospects')
-        .insert([{ ...formData, checklist: [] }])
+        .insert([{ ...formData, checklist: [], chiffrage: defaultChiffrage() }])
         .select();
 
       if (error) throw error;
       
-      setProspects([{ ...data[0], checklist: [] }, ...prospects]);
+      setProspects([{ ...data[0], checklist: [], chiffrage: defaultChiffrage() }, ...prospects]);
       setIsAddOpen(false);
       setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À étudier' });
       showSuccess("Prospect ajouté avec succès");
@@ -253,7 +257,8 @@ const Prospection = () => {
           status: editingProspect.status,
           prix: editingProspect.prix ?? '',
           ville: editingProspect.ville ?? '',
-          checklist: editingProspect.checklist ?? []
+          checklist: editingProspect.checklist ?? [],
+          chiffrage: editingProspect.chiffrage ?? defaultChiffrage()
         })
         .eq('id', editingProspect.id);
 
@@ -334,7 +339,6 @@ const Prospection = () => {
   const handleDragStart = (e: React.DragEvent, id: string) => {
     dragIdRef.current = id;
     e.dataTransfer.effectAllowed = 'move';
-    // Delay so the ghost image is set before we style the dragging element
     setTimeout(() => {
       const el = document.getElementById(`prospect-card-${id}`);
       if (el) el.style.opacity = '0.4';
@@ -356,7 +360,6 @@ const Prospection = () => {
   };
 
   const handleColumnDragLeave = (e: React.DragEvent, colStatus: Prospect['status']) => {
-    // Only clear if leaving the column wrapper itself
     if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
       if (dragOverColumn === colStatus) setDragOverColumn(null);
     }
@@ -382,7 +385,6 @@ const Prospection = () => {
     const dragged = prospects.find(p => p.id === id);
     if (!dragged) return;
 
-    // Build new ordered list
     const withoutDragged = prospects.filter(p => p.id !== id);
     const newStatus = colStatus;
 
@@ -398,8 +400,6 @@ const Prospection = () => {
         ...withoutDragged.slice(insertIdx),
       ];
     } else {
-      // Drop on empty column or no specific target → append at end of column
-      const colProspects = withoutDragged.filter(p => p.status === newStatus);
       const lastColIdx = withoutDragged.findLastIndex(p => p.status === newStatus);
       const updated = { ...dragged, status: newStatus };
       if (lastColIdx === -1) {
@@ -418,7 +418,6 @@ const Prospection = () => {
       localStorage.setItem('immo_prospects_v2', JSON.stringify(newList));
     }
 
-    // Persist status change if needed
     if (dragged.status !== newStatus) {
       if (isSupabaseConfigured()) {
         await supabase.from('prospects').update({ status: newStatus }).eq('id', id);
@@ -536,7 +535,6 @@ const Prospection = () => {
             onDragLeave={(e) => handleColumnDragLeave(e, colStatus)}
             onDrop={(e) => handleDrop(e, colStatus)}
           >
-            {/* Column header */}
             <div className={cn(
               "flex items-center justify-between px-4 py-3 rounded-2xl border mb-3",
               cfg.header
@@ -555,7 +553,6 @@ const Prospection = () => {
               </span>
             </div>
 
-            {/* Cards container */}
             <div
               className={cn(
                 "flex flex-col gap-3 min-h-[80px] rounded-2xl transition-all duration-150 p-1",
@@ -618,7 +615,6 @@ const Prospection = () => {
               />
             </div>
 
-            {/* View switcher toggle */}
             <div className="flex items-center gap-1 bg-white rounded-2xl p-1.5 shadow-sm flex-shrink-0">
               <button
                 onClick={() => setViewMode('gallery')}
@@ -675,7 +671,6 @@ const Prospection = () => {
                       </div>
                     </div>
 
-                    {/* Prix + Ville */}
                     <div className="flex items-center gap-2 mb-5 flex-wrap">
                       {prixFormate ? (
                         <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 rounded-xl px-3 py-1.5">
@@ -788,7 +783,6 @@ const Prospection = () => {
               />
             </div>
 
-            {/* Prix + Ville */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
@@ -908,7 +902,6 @@ const Prospection = () => {
                     />
                   </div>
 
-                  {/* Prix + Ville */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
@@ -999,6 +992,14 @@ const Prospection = () => {
                     <ProspectChecklist
                       items={editingProspect.checklist ?? []}
                       onChange={(items) => setEditingProspect({ ...editingProspect, checklist: items })}
+                    />
+                  </div>
+
+                  {/* ——— CHIFFRAGE ——— */}
+                  <div className="bg-gray-50/60 rounded-2xl p-5">
+                    <ProspectChiffrage
+                      data={editingProspect.chiffrage ?? defaultChiffrage()}
+                      onChange={(chiffrage) => setEditingProspect({ ...editingProspect, chiffrage })}
                     />
                   </div>
 
