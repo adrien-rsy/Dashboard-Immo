@@ -186,7 +186,7 @@ const ProspectChecklist: React.FC<ProspectChecklistProps> = ({ items, onChange }
             value={newLabel}
             onChange={e => setNewLabel(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem())}
-            className="flex-1 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+            className="flex-1 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
           />
           <button
             type="button"

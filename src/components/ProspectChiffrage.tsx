@@ -56,7 +56,7 @@ const NumInput = ({
       value={value === '' ? '' : value}
       onChange={e => onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
       className={cn(
-        'w-full bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300 py-2.5',
+        'w-full bg-white border border-gray-100 rounded-xl text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300 py-2.5',
         prefix ? 'pl-8 pr-3' : 'px-3'
       )}
     />
@@ -127,7 +127,7 @@ const ProspectChiffrage: React.FC<Props> = ({ data, onChange }) => {
                   value={lot.nom}
                   onChange={e => updateLot(lot.id, 'nom', e.target.value)}
                   placeholder="Nom du lot"
-                  className="flex-1 bg-white border border-gray-100 rounded-xl text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+                  className="flex-1 bg-white border border-gray-100 rounded-xl text-base sm:text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
                 />
                 <div className="relative w-36">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">€</span>
@@ -137,7 +137,7 @@ const ProspectChiffrage: React.FC<Props> = ({ data, onChange }) => {
                     value={lot.prix === '' ? '' : lot.prix}
                     onChange={e => updateLot(lot.id, 'prix', e.target.value === '' ? '' : parseFloat(e.target.value))}
                     placeholder="0"
-                    className="w-full bg-white border border-gray-100 rounded-xl text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+                    className="w-full bg-white border border-gray-100 rounded-xl text-base sm:text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
                   />
                 </div>
                 <button
@@ -160,7 +160,7 @@ const ProspectChiffrage: React.FC<Props> = ({ data, onChange }) => {
             value={newLotNom}
             onChange={e => setNewLotNom(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLot())}
-            className="flex-1 bg-white border border-gray-100 rounded-xl text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+            className="flex-1 bg-white border border-gray-100 rounded-xl text-base sm:text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
           />
           <div className="relative w-36">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">€</span>
@@ -171,7 +171,7 @@ const ProspectChiffrage: React.FC<Props> = ({ data, onChange }) => {
               value={newLotPrix === '' ? '' : newLotPrix}
               onChange={e => setNewLotPrix(e.target.value === '' ? '' : parseFloat(e.target.value))}
               onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLot())}
-              className="w-full bg-white border border-gray-100 rounded-xl text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
+              className="w-full bg-white border border-gray-100 rounded-xl text-base sm:text-sm pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-black transition-all placeholder:text-gray-300"
             />
           </div>
           <button
