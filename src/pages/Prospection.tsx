@@ -772,12 +772,12 @@ const Prospection = () => {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="w-[calc(100vw-2rem)] mx-auto overflow-x-hidden rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           {/* Header */}
-          <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 min-w-0">
-            <DialogTitle className="text-2xl font-black truncate">Nouveau Prospect</DialogTitle>
+          <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 min-w-0 overflow-hidden">
+            <DialogTitle className="text-2xl font-black truncate min-w-0">Nouveau Prospect</DialogTitle>
           </DialogHeader>
 
           {/* Body */}
-          <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0">
+          <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0 overflow-hidden">
             {/* Titre */}
             <div className="space-y-2 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
@@ -896,8 +896,8 @@ const Prospection = () => {
             return (
               <>
                 {/* Header avec icône statut + titre + bouton supprimer */}
-                <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 flex flex-row items-center justify-between min-w-0">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 flex flex-row items-center justify-between min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", cfg.bg, cfg.text)}>
                       <StatusIcon className="w-5 h-5" />
                     </div>
@@ -912,7 +912,7 @@ const Prospection = () => {
                 </DialogHeader>
 
                 {/* Body */}
-                <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0">
+                <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0 overflow-hidden">
                   {/* Titre */}
                   <div className="space-y-2 min-w-0">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
@@ -984,11 +984,11 @@ const Prospection = () => {
                   {/* Lien annonce — flex avec input qui se rétrécit + bouton lien fixe */}
                   <div className="space-y-2 min-w-0">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
-                    <div className="flex gap-2 min-w-0">
+                    <div className="flex gap-2 min-w-0 overflow-hidden">
                       <Input 
                         value={editingProspect.link} 
                         onChange={e => setEditingProspect({...editingProspect, link: e.target.value})}
-                        className="w-full min-w-0 rounded-xl"
+                        className="w-full min-w-0 flex-1 rounded-xl"
                       />
                       {editingProspect.link && (
                         <a 
@@ -1014,7 +1014,7 @@ const Prospection = () => {
                   </div>
 
                   {/* ——— CHECKLIST ——— */}
-                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0">
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0 overflow-hidden">
                     <ProspectChecklist
                       items={editingProspect.checklist ?? []}
                       onChange={(items) => setEditingProspect({ ...editingProspect, checklist: items })}
@@ -1022,7 +1022,7 @@ const Prospection = () => {
                   </div>
 
                   {/* ——— CHIFFRAGE ——— */}
-                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0">
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0 overflow-hidden">
                     <ProspectChiffrage
                       data={editingProspect.chiffrage ?? defaultChiffrage()}
                       onChange={(chiffrage) => setEditingProspect({ ...editingProspect, chiffrage })}
