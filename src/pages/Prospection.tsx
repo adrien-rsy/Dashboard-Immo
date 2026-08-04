@@ -766,67 +766,75 @@ const Prospection = () => {
         </div>
       </main>
 
-      {/* Dialog Ajout */}
+      {/* ============================================================ */}
+      {/* Dialog Ajout                                                  */}
+      {/* ============================================================ */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
-          <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50">
-            <DialogTitle className="text-2xl font-black">Nouveau Prospect</DialogTitle>
+        <DialogContent className="w-[calc(100vw-2rem)] mx-auto overflow-x-hidden rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
+          {/* Header */}
+          <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 min-w-0">
+            <DialogTitle className="text-2xl font-black truncate">Nouveau Prospect</DialogTitle>
           </DialogHeader>
-          <div className="px-4 py-4 sm:p-8 space-y-5">
-            <div className="space-y-2">
+
+          {/* Body */}
+          <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0">
+            {/* Titre */}
+            <div className="space-y-2 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
               <Input 
                 placeholder="ex: Immeuble de rapport Lyon 3"
                 value={formData.title} 
                 onChange={e => setFormData({...formData, title: e.target.value})}
-                className="rounded-xl"
+                className="w-full rounded-xl"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            {/* Prix / Ville */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+              <div className="space-y-2 min-w-0">
                 <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
-                <div className="relative">
+                <div className="relative min-w-0">
                   <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input 
                     placeholder="ex: 180000"
                     value={formData.prix} 
                     onChange={e => setFormData({...formData, prix: e.target.value})}
-                    className="rounded-xl pl-10"
+                    className="w-full rounded-xl pl-10"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
-                <div className="relative">
+                <div className="relative min-w-0">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input 
                     placeholder="ex: Dijon"
                     value={formData.ville} 
                     onChange={e => setFormData({...formData, ville: e.target.value})}
-                    className="rounded-xl pl-10"
+                    className="w-full rounded-xl pl-10"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            {/* Téléphone / Statut */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+              <div className="space-y-2 min-w-0">
                 <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
                 <Input 
                   placeholder="06 00 00 00 00"
                   value={formData.phone} 
                   onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="rounded-xl"
+                  className="w-full rounded-xl"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(val: Prospect['status']) => setFormData({...formData, status: val})}
                 >
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger className="w-full rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
@@ -840,27 +848,31 @@ const Prospection = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Lien annonce */}
+            <div className="space-y-2 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input 
                   placeholder="LBC, SeLoger..."
                   value={formData.link} 
                   onChange={e => setFormData({...formData, link: e.target.value})}
-                  className="rounded-xl pl-10"
+                  className="w-full rounded-xl pl-10"
                 />
               </div>
             </div>
-            <div className="space-y-2">
+
+            {/* Notes */}
+            <div className="space-y-2 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
               <Textarea 
                 placeholder="Détails du bien, contact agence..."
                 value={formData.notes} 
                 onChange={e => setFormData({...formData, notes: e.target.value})}
-                className="rounded-xl min-h-[100px]"
+                className="w-full rounded-xl min-h-[100px]"
               />
             </div>
+
             <DialogFooter className="pt-4">
               <button 
                 onClick={handleAdd}
@@ -873,81 +885,89 @@ const Prospection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Edition / Détails */}
+      {/* ============================================================ */}
+      {/* Dialog Édition / Détails                                     */}
+      {/* ============================================================ */}
       <Dialog open={!!editingProspect} onOpenChange={(open) => !open && setEditingProspect(null)}>
-        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
+        <DialogContent className="w-[calc(100vw-2rem)] mx-auto overflow-x-hidden rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
           {editingProspect && (() => {
             const cfg = statusConfig[editingProspect.status] ?? statusConfig["En attente"];
             const StatusIcon = cfg.icon;
             return (
               <>
-                <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
+                {/* Header avec icône statut + titre + bouton supprimer */}
+                <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 flex flex-row items-center justify-between min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", cfg.bg, cfg.text)}>
                       <StatusIcon className="w-5 h-5" />
                     </div>
-                    <DialogTitle className="text-2xl font-black">Détails du Prospect</DialogTitle>
+                    <DialogTitle className="text-2xl font-black min-w-0 truncate">Détails du Prospect</DialogTitle>
                   </div>
                   <button 
                     onClick={() => handleDelete(editingProspect.id)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0 ml-2"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </DialogHeader>
-                <div className="px-4 py-4 sm:p-8 space-y-5">
-                  <div className="space-y-2">
+
+                {/* Body */}
+                <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0">
+                  {/* Titre */}
+                  <div className="space-y-2 min-w-0">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
                     <Input 
                       value={editingProspect.title} 
                       onChange={e => setEditingProspect({...editingProspect, title: e.target.value})}
-                      className="rounded-xl"
+                      className="w-full rounded-xl"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  {/* Prix / Ville */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+                    <div className="space-y-2 min-w-0">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
-                      <div className="relative">
+                      <div className="relative min-w-0">
                         <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input 
                           placeholder="ex: 180000"
                           value={editingProspect.prix ?? ''} 
                           onChange={e => setEditingProspect({...editingProspect, prix: e.target.value})}
-                          className="rounded-xl pl-10"
+                          className="w-full rounded-xl pl-10"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
-                      <div className="relative">
+                      <div className="relative min-w-0">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input 
                           placeholder="ex: Dijon"
                           value={editingProspect.ville ?? ''} 
                           onChange={e => setEditingProspect({...editingProspect, ville: e.target.value})}
-                          className="rounded-xl pl-10"
+                          className="w-full rounded-xl pl-10"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  {/* Téléphone / Statut */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+                    <div className="space-y-2 min-w-0">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
                       <Input 
                         value={editingProspect.phone} 
                         onChange={e => setEditingProspect({...editingProspect, phone: e.target.value})}
-                        className="rounded-xl"
+                        className="w-full rounded-xl"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
                       <Select 
                         value={editingProspect.status} 
                         onValueChange={(val: Prospect['status']) => setEditingProspect({...editingProspect, status: val})}
                       >
-                        <SelectTrigger className="rounded-xl">
+                        <SelectTrigger className="w-full rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -961,13 +981,14 @@ const Prospection = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* Lien annonce — flex avec input qui se rétrécit + bouton lien fixe */}
+                  <div className="space-y-2 min-w-0">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 min-w-0">
                       <Input 
                         value={editingProspect.link} 
                         onChange={e => setEditingProspect({...editingProspect, link: e.target.value})}
-                        className="rounded-xl"
+                        className="w-full min-w-0 rounded-xl"
                       />
                       {editingProspect.link && (
                         <a 
@@ -981,17 +1002,19 @@ const Prospection = () => {
                       )}
                     </div>
                   </div>
-                  <div className="space-y-2">
+
+                  {/* Notes */}
+                  <div className="space-y-2 min-w-0">
                     <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
                     <Textarea 
                       value={editingProspect.notes} 
                       onChange={e => setEditingProspect({...editingProspect, notes: e.target.value})}
-                      className="rounded-xl min-h-[120px]"
+                      className="w-full rounded-xl min-h-[120px]"
                     />
                   </div>
 
                   {/* ——— CHECKLIST ——— */}
-                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5">
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0">
                     <ProspectChecklist
                       items={editingProspect.checklist ?? []}
                       onChange={(items) => setEditingProspect({ ...editingProspect, checklist: items })}
@@ -999,7 +1022,7 @@ const Prospection = () => {
                   </div>
 
                   {/* ——— CHIFFRAGE ——— */}
-                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5">
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0">
                     <ProspectChiffrage
                       data={editingProspect.chiffrage ?? defaultChiffrage()}
                       onChange={(chiffrage) => setEditingProspect({ ...editingProspect, chiffrage })}
