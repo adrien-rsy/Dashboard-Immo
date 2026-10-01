@@ -34,6 +34,10 @@ const ProspectChecklist: React.FC<ProspectChecklistProps> = ({ items, onChange }
     onChange(items.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
   };
 
+  const updateNote = (id: string, note: string) => {
+    onChange(items.map(item => item.id === id ? { ...item, note } : item));
+  };
+
   const removeItem = (id: string) => {
     onChange(items.filter(item => item.id !== id));
   };
@@ -45,6 +49,7 @@ const ProspectChecklist: React.FC<ProspectChecklistProps> = ({ items, onChange }
       id: `ci_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       label,
       checked: false,
+      note: undefined,
     };
     onChange([...items, newItem]);
     setNewLabel('');
@@ -54,7 +59,7 @@ const ProspectChecklist: React.FC<ProspectChecklistProps> = ({ items, onChange }
     const existingLabels = new Set(items.map(i => i.label.toLowerCase()));
     const newItems: ChecklistItem[] = template.items
       .filter(ti => !existingLabels.has(ti.label.toLowerCase()))
-      .map(ti => ({ id: `ci_${Date.now()}_${Math.random().toString(36).slice(2)}`, label: ti.label, checked: false }));
+      .map(ti => ({ id: `ci_${Date.now()}_${Math.random().toString(36).slice(2)}`, label: ti.label, checked: false, note: undefined }));
     onChange([...items, ...newItems]);
     setShowTemplates(false);
   };
@@ -144,30 +149,40 @@ const ProspectChecklist: React.FC<ProspectChecklistProps> = ({ items, onChange }
             {items.map(item => (
               <div
                 key={item.id}
-                className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white transition-colors"
+                className="group flex flex-col gap-1.5 px-3 py-2.5 rounded-xl hover:bg-white transition-colors"
               >
-                <button
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  className="flex-shrink-0 text-gray-400 hover:text-emerald-600 transition-colors"
-                >
-                  {item.checked
-                    ? <CheckSquare className="w-5 h-5 text-emerald-500" />
-                    : <Square className="w-5 h-5" />}
-                </button>
-                <span className={cn(
-                  "flex-1 text-sm transition-colors",
-                  item.checked ? "line-through text-gray-300" : "text-gray-700"
-                )}>
-                  {item.label}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 rounded-lg transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggle(item.id)}
+                    className="flex-shrink-0 text-gray-400 hover:text-emerald-600 transition-colors"
+                  >
+                    {item.checked
+                      ? <CheckSquare className="w-5 h-5 text-emerald-500" />
+                      : <Square className="w-5 h-5" />}
+                  </button>
+                  <span className={cn(
+                    "flex-1 text-sm transition-colors",
+                    item.checked ? "line-through text-gray-300" : "text-gray-700"
+                  )}>
+                    {item.label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {/* Note input */}
+                <input
+                  type="text"
+                  placeholder="Ajouter une note..."
+                  value={item.note || ''}
+                  onChange={e => updateNote(item.id, e.target.value)}
+                  className="w-full ml-8 px-2 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs text-gray-600 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-black/10 transition-all"
+                />
               </div>
             ))}
           </div>

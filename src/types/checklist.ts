@@ -2,6 +2,7 @@ export interface ChecklistItem {
   id: string;
   label: string;
   checked: boolean;
+  note?: string;
 }
 
 export interface ChecklistTemplate {
