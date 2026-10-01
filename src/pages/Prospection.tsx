@@ -1,40 +1,50 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import ProspectChecklist from '@/components/ProspectChecklist';
+import ProspectChiffrage, { ChiffrageData, defaultChiffrage } from '@/components/ProspectChiffrage';
 import { ChecklistItem } from '@/types/checklist';
 import { 
   Plus, 
   Phone, 
-  FileText, 
   Link as LinkIcon, 
-  MoreHorizontal, 
-  Search,
-  Edit,
-  Trash2,
-  ExternalLink,
+  Trash2, 
+  ExternalLink, 
+  Search, 
+  Briefcase,
+  X,
   MapPin,
+  Clock,
+  Pencil,
   Euro,
   LayoutGrid,
-  List,
-  ChevronDown,
-  GripVertical,
-  Building2,
-  Calendar,
-  X,
-  Save,
-  CheckCircle2,
-  Clock3,
-  Eye,
-  ListChecks
+  Columns3,
+  Handshake
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { showSuccess, showError } from '@/utils/toast';
+import { cn } from '@/lib/utils';
+
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface Prospect {
   id: string;
@@ -42,369 +52,1001 @@ interface Prospect {
   phone: string;
   notes: string;
   link: string;
-  status: "À appeler" | "À visiter" | "À étudier" | "En attente";
+  status: "À étudier" | "À appeler" | "À visiter" | "À négocier" | "En attente";
+  prix?: string;
+  ville?: string;
   created_at?: string;
   checklist?: ChecklistItem[];
+  chiffrage?: ChiffrageData;
 }
 
+type ViewMode = 'gallery' | 'kanban';
+
 const statusConfig: Record<Prospect['status'], {
-  label: string;
-  color: string;
-  dot: string;
   icon: React.ElementType;
+  bg: string;
+  text: string;
+  border: string;
+  header: string;
 }> = {
-  'À appeler': { label: 'À appeler', color: 'bg-amber-50 text-amber-700 border-amber-100', dot: 'bg-amber-400', icon: Phone },
-  'À visiter': { label: 'À visiter', color: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-400', icon: Eye },
-  'À étudier': { label: 'À étudier', color: 'bg-violet-50 text-violet-700 border-violet-100', dot: 'bg-violet-400', icon: FileText },
-  'En attente': { label: 'En attente', color: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400', icon: Clock3 },
+  "À étudier": {
+    icon: Search,
+    bg: "bg-emerald-50",
+    text: "text-emerald-600",
+    border: "border-emerald-100",
+    header: "bg-emerald-50 border-emerald-100",
+  },
+  "À appeler": {
+    icon: Phone,
+    bg: "bg-blue-50",
+    text: "text-blue-600",
+    border: "border-blue-100",
+    header: "bg-blue-50 border-blue-100",
+  },
+  "À visiter": {
+    icon: MapPin,
+    bg: "bg-violet-50",
+    text: "text-violet-600",
+    border: "border-violet-100",
+    header: "bg-violet-50 border-violet-100",
+  },
+  "À négocier": {
+    icon: Handshake,
+    bg: "bg-amber-50",
+    text: "text-amber-600",
+    border: "border-amber-100",
+    header: "bg-amber-50 border-amber-100",
+  },
+  "En attente": {
+    icon: Clock,
+    bg: "bg-orange-50",
+    text: "text-orange-500",
+    border: "border-orange-100",
+    header: "bg-orange-50 border-orange-100",
+  },
 };
 
-const statusOrder: Prospect['status'][] = ['À appeler', 'À visiter', 'À étudier', 'En attente'];
+const KANBAN_COLUMNS: Prospect['status'][] = ["À étudier", "À appeler", "À visiter", "À négocier", "En attente"];
 
-const storageKey = 'immo_prospects';
-
-const loadLocalProspects = (): Prospect[] => {
-  try {
-    const saved = localStorage.getItem(storageKey);
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveLocalProspects = (prospects: Prospect[]) => {
-  localStorage.setItem(storageKey, JSON.stringify(prospects));
+const formatPrix = (prix?: string) => {
+  if (!prix) return null;
+  const num = parseInt(prix.replace(/\s/g, '').replace(/[^0-9]/g, ''));
+  if (isNaN(num)) return prix;
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 };
 
 const Prospection = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
-  const [formData, setFormData] = useState<Omit<Prospect, 'id' | 'created_at' | 'checklist'>>({
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
+
+  // Drag & drop state
+  const dragIdRef = useRef<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<Prospect['status'] | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after'>('after');
+
+  const [formData, setFormData] = useState({
     title: '',
     phone: '',
     notes: '',
     link: '',
-    status: 'À appeler',
+    prix: '',
+    ville: '',
+    status: 'À étudier' as Prospect['status']
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
-  const [draggedProspectId, setDraggedProspectId] = useState<string | null>(null);
 
-  const showSuccess = (description: string) => toast({ title: 'Succès', description });
-  const showError = (description: string) => toast({ title: 'Erreur', description, variant: 'destructive' });
+  useEffect(() => {
+    fetchProspects();
+  }, []);
 
-  const migrateOldStatuses = (items: any[]): Prospect[] => {
-    return items.map(item => ({
-      ...item,
-      checklist: (item.checklist ?? []).map((checklistItem: ChecklistItem & { checked?: boolean }) => ({
-        id: checklistItem.id,
-        label: checklistItem.label,
-        response: checklistItem.response ?? '',
-      })),
-      status:
-        item.status === 'À appeler' ? 'À appeler' :
-        item.status === 'Sans suite' ? 'En attente' :
-        item.status === 'À visiter' ? 'À visiter' :
-        item.status === 'À étudier' ? 'À étudier' : 'En attente',
+  const migrateOldStatuses = (prospects: any[]): Prospect[] => {
+    return prospects.map(p => ({
+      ...p,
+      checklist: p.checklist ?? [],
+      chiffrage: p.chiffrage ?? defaultChiffrage(),
+      prix: p.prix ?? '',
+      ville: p.ville ?? '',
+      status: 
+        p.status === 'À appeler' ? 'À appeler' :
+        p.status === 'À visiter' ? 'À visiter' :
+        p.status === 'À étudier' ? 'À étudier' :
+        p.status === 'À négocier' ? 'À négocier' :
+        p.status === 'Sans suite' ? 'En attente' :
+        p.status === 'A Appeler' ? 'À appeler' :
+        p.status === 'A visiter' ? 'À visiter' :
+        p.status === 'A etudier' ? 'À étudier' :
+        'En attente'
     }));
   };
 
-  const persistProspects = async (nextProspects: Prospect[]) => {
-    saveLocalProspects(nextProspects);
-  };
-
-  useEffect(() => {
-    const loadProspects = async () => {
-      const localProspects = migrateOldStatuses(loadLocalProspects());
-      setProspects(localProspects);
-
-      try {
-        const { data, error } = await supabase.from('prospects').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        if (data) {
-          const remoteProspects = migrateOldStatuses(data as Prospect[]);
-          setProspects(remoteProspects);
-          saveLocalProspects(remoteProspects);
-        }
-      } catch {
-        // Le fallback local est volontaire si Supabase n'est pas configuré ou indisponible.
+  const fetchProspects = async () => {
+    if (!isSupabaseConfigured()) {
+      const saved = localStorage.getItem('immo_prospects_v2');
+      if (saved) {
+        const migrated = migrateOldStatuses(JSON.parse(saved));
+        setProspects(migrated);
       }
-    };
-
-    loadProspects();
-  }, []);
-
-  const handleAddProspect = async () => {
-    if (!formData.title.trim()) {
-      showError('Veuillez renseigner un titre pour le prospect.');
+      setLoading(false);
       return;
     }
 
-    const newProspect: Prospect = {
-      ...formData,
-      id: `prospect_${Date.now()}`,
-      created_at: new Date().toISOString(),
-      checklist: [],
-    };
-
-    const nextProspects = [newProspect, ...prospects];
-    setProspects(nextProspects);
-    saveLocalProspects(nextProspects);
-
     try {
-      const { data, error } = await supabase.from('prospects').insert([{ ...formData, checklist: [] }]).select();
+      const { data, error } = await supabase
+        .from('prospects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-
-      if (data?.[0]) {
-        const savedProspect = migrateOldStatuses([data[0]])[0];
-        const syncedProspects = [savedProspect, ...prospects];
-        setProspects(syncedProspects);
-        saveLocalProspects(syncedProspects);
+      const migrated = migrateOldStatuses(data || []);
+      setProspects(migrated);
+    } catch (error) {
+      console.error('Error fetching prospects:', error);
+      const saved = localStorage.getItem('immo_prospects_v2');
+      if (saved) {
+        const migrated = migrateOldStatuses(JSON.parse(saved));
+        setProspects(migrated);
       }
-    } catch {
-      // Le prospect reste disponible localement si la synchronisation distante échoue.
+    } finally {
+      setLoading(false);
     }
-
-    setFormData({ title: '', phone: '', notes: '', link: '', status: 'À appeler' });
-    setIsAddOpen(false);
-    showSuccess('Prospect ajouté avec succès.');
   };
 
-  const handleSaveProspect = async () => {
+  const saveToLocal = (data: Prospect[]) => {
+    setProspects(data);
+    localStorage.setItem('immo_prospects_v2', JSON.stringify(data));
+  };
+
+  const handleAdd = async () => {
+    if (!isSupabaseConfigured()) {
+      const newProspect: Prospect = {
+        ...formData,
+        id: `prospect_${Date.now()}`,
+        created_at: new Date().toISOString(),
+        checklist: [],
+        chiffrage: defaultChiffrage()
+      };
+      saveToLocal([newProspect, ...prospects]);
+      setIsAddOpen(false);
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À étudier' });
+      showSuccess("Prospect ajouté avec succès (Local)");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('prospects')
+        .insert([{ ...formData, checklist: [], chiffrage: defaultChiffrage() }])
+        .select();
+
+      if (error) throw error;
+      
+      setProspects([{ ...data[0], checklist: [], chiffrage: defaultChiffrage() }, ...prospects]);
+      setIsAddOpen(false);
+      setFormData({ title: '', phone: '', notes: '', link: '', prix: '', ville: '', status: 'À étudier' });
+      showSuccess("Prospect ajouté avec succès");
+    } catch (error) {
+      console.error('Error adding prospect:', error);
+      showError("Erreur lors de l'ajout");
+    }
+  };
+
+  const handleUpdate = async () => {
     if (!editingProspect) return;
 
-    const normalizedProspect: Prospect = {
-      ...editingProspect,
-      checklist: (editingProspect.checklist ?? []).map(item => ({
-        id: item.id,
-        label: item.label,
-        response: item.response ?? '',
-      })),
-    };
-
-    const nextProspects = prospects.map(prospect => prospect.id === normalizedProspect.id ? normalizedProspect : prospect);
-    setProspects(nextProspects);
-    saveLocalProspects(nextProspects);
+    if (!isSupabaseConfigured()) {
+      const updated = prospects.map(p => p.id === editingProspect.id ? editingProspect : p);
+      saveToLocal(updated);
+      setEditingProspect(null);
+      showSuccess("Prospect mis à jour (Local)");
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('prospects')
         .update({
-          title: normalizedProspect.title,
-          phone: normalizedProspect.phone,
-          notes: normalizedProspect.notes,
-          link: normalizedProspect.link,
-          status: normalizedProspect.status,
-          checklist: normalizedProspect.checklist,
+          title: editingProspect.title,
+          phone: editingProspect.phone,
+          notes: editingProspect.notes,
+          link: editingProspect.link,
+          status: editingProspect.status,
+          prix: editingProspect.prix ?? '',
+          ville: editingProspect.ville ?? '',
+          checklist: editingProspect.checklist ?? [],
+          chiffrage: editingProspect.chiffrage ?? defaultChiffrage()
         })
-        .eq('id', normalizedProspect.id);
-      if (error) throw error;
-    } catch {
-      // La sauvegarde locale reste la source de repli.
-    }
+        .eq('id', editingProspect.id);
 
-    setEditingProspect(null);
-    showSuccess('Prospect mis à jour avec succès.');
+      if (error) throw error;
+
+      setProspects(prospects.map(p => p.id === editingProspect.id ? editingProspect : p));
+      setEditingProspect(null);
+      showSuccess("Prospect mis à jour");
+    } catch (error) {
+      console.error('Error updating prospect:', error);
+      showError("Erreur lors de la mise à jour");
+    }
   };
 
-  const handleDeleteProspect = async (prospect: Prospect) => {
-    const nextProspects = prospects.filter(item => item.id !== prospect.id);
-    setProspects(nextProspects);
-    saveLocalProspects(nextProspects);
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer ce prospect ?")) return;
+
+    if (!isSupabaseConfigured()) {
+      saveToLocal(prospects.filter(p => p.id !== id));
+      setEditingProspect(null);
+      showSuccess("Prospect supprimé (Local)");
+      return;
+    }
 
     try {
-      const { error } = await supabase.from('prospects').delete().eq('id', prospect.id);
-      if (error) throw error;
-    } catch {
-      // La suppression reste effective dans le fallback local.
-    }
+      const { error } = await supabase
+        .from('prospects')
+        .delete()
+        .eq('id', id);
 
-    if (editingProspect?.id === prospect.id) setEditingProspect(null);
-    showSuccess('Prospect supprimé.');
+      if (error) throw error;
+
+      setProspects(prospects.filter(p => p.id !== id));
+      setEditingProspect(null);
+      showSuccess("Prospect supprimé");
+    } catch (error) {
+      console.error('Error deleting prospect:', error);
+      showError("Erreur lors de la suppression");
+    }
   };
 
-  const updateProspectStatus = async (prospectId: string, status: Prospect['status']) => {
-    const nextProspects = prospects.map(prospect => prospect.id === prospectId ? { ...prospect, status } : prospect);
-    setProspects(nextProspects);
-    saveLocalProspects(nextProspects);
+  const handleStatusChange = async (id: string, status: Prospect['status'], e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
+    if (!isSupabaseConfigured()) {
+      saveToLocal(prospects.map(p => p.id === id ? { ...p, status } : p));
+      return;
+    }
 
     try {
-      const { error } = await supabase.from('prospects').update({ status }).eq('id', prospectId);
+      const { error } = await supabase
+        .from('prospects')
+        .update({ status })
+        .eq('id', id);
+
       if (error) throw error;
-    } catch {
-      // La mise à jour locale garantit la continuité d'usage.
+      setProspects(prospects.map(p => p.id === id ? { ...p, status } : p));
+    } catch (error) {
+      console.error('Error updating status:', error);
     }
   };
 
-  const filteredProspects = prospects.filter(prospect =>
-    [prospect.title, prospect.phone, prospect.notes, prospect.status]
-      .filter(Boolean)
-      .some(value => value.toLowerCase().includes(searchTerm.toLowerCase())),
+  const convertToProject = (prospect: Prospect, e: React.MouseEvent) => {
+    e.stopPropagation();
+    localStorage.setItem('prospection_conversion', JSON.stringify({
+      title: prospect.title || `Projet - ${prospect.phone}`,
+      address: prospect.ville || '',
+      lotCount: '1',
+      acqPrice: prospect.prix || '',
+      travauxPrice: '',
+      notes: prospect.notes
+    }));
+    navigate('/projects');
+  };
+
+  // ——— DRAG & DROP HANDLERS ———
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    dragIdRef.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      const el = document.getElementById(`prospect-card-${id}`);
+      if (el) el.style.opacity = '0.4';
+    }, 0);
+  };
+
+  const handleDragEnd = (id: string) => {
+    dragIdRef.current = null;
+    setDragOverColumn(null);
+    setDropTargetId(null);
+    const el = document.getElementById(`prospect-card-${id}`);
+    if (el) el.style.opacity = '1';
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent, colStatus: Prospect['status']) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(colStatus);
+  };
+
+  const handleColumnDragLeave = (e: React.DragEvent, colStatus: Prospect['status']) => {
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      if (dragOverColumn === colStatus) setDragOverColumn(null);
+    }
+  };
+
+  const handleCardDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    setDropTargetId(targetId);
+    setDropPosition(e.clientY < midY ? 'before' : 'after');
+  };
+
+  const handleDrop = async (e: React.DragEvent, colStatus: Prospect['status']) => {
+    e.preventDefault();
+    const id = dragIdRef.current;
+    if (!id) return;
+
+    setDragOverColumn(null);
+    setDropTargetId(null);
+
+    const dragged = prospects.find(p => p.id === id);
+    if (!dragged) return;
+
+    const withoutDragged = prospects.filter(p => p.id !== id);
+    const newStatus = colStatus;
+
+    let newList: Prospect[];
+
+    if (dropTargetId && dropTargetId !== id) {
+      const targetIdx = withoutDragged.findIndex(p => p.id === dropTargetId);
+      const insertIdx = dropPosition === 'before' ? targetIdx : targetIdx + 1;
+      const updated = { ...dragged, status: newStatus };
+      newList = [
+        ...withoutDragged.slice(0, insertIdx),
+        updated,
+        ...withoutDragged.slice(insertIdx),
+      ];
+    } else {
+      const lastColIdx = withoutDragged.findLastIndex(p => p.status === newStatus);
+      const updated = { ...dragged, status: newStatus };
+      if (lastColIdx === -1) {
+        newList = [...withoutDragged, updated];
+      } else {
+        newList = [
+          ...withoutDragged.slice(0, lastColIdx + 1),
+          updated,
+          ...withoutDragged.slice(lastColIdx + 1),
+        ];
+      }
+    }
+
+    setProspects(newList);
+    if (!isSupabaseConfigured()) {
+      localStorage.setItem('immo_prospects_v2', JSON.stringify(newList));
+    }
+
+    if (dragged.status !== newStatus) {
+      if (isSupabaseConfigured()) {
+        await supabase.from('prospects').update({ status: newStatus }).eq('id', id);
+      }
+    }
+  };
+
+  const filteredProspects = prospects.filter(p => 
+    (p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.phone.includes(searchTerm) || 
+    p.notes.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.ville || '').toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getChecklistCompletion = (prospect: Prospect) => {
-    const checklist = prospect.checklist ?? [];
-    const answered = checklist.filter(item => item.response?.trim()).length;
-    return { total: checklist.length, answered };
-  };
-
-  const renderProspectCard = (prospect: Prospect) => {
-    const cfg = statusConfig[prospect.status] ?? statusConfig['En attente'];
+  // ——— KANBAN CARD ———
+  const KanbanCard = ({ prospect }: { prospect: Prospect }) => {
+    const cfg = statusConfig[prospect.status] ?? statusConfig["En attente"];
     const StatusIcon = cfg.icon;
-    const { total: checklistTotal, answered: checklistAnswered } = getChecklistCompletion(prospect);
+    const prixFormate = formatPrix(prospect.prix);
+    const checklistTotal = prospect.checklist?.length ?? 0;
+    const checklistDone = prospect.checklist?.filter(i => i.checked).length ?? 0;
+    const isDropTarget = dropTargetId === prospect.id;
 
     return (
       <div
-        key={prospect.id}
-        draggable={viewMode === 'kanban'}
-        onDragStart={() => setDraggedProspectId(prospect.id)}
-        onDragEnd={() => setDraggedProspectId(null)}
-        className="group bg-white rounded-3xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:shadow-gray-100/70 transition-all cursor-pointer"
+        id={`prospect-card-${prospect.id}`}
+        draggable
+        onDragStart={(e) => handleDragStart(e, prospect.id)}
+        onDragEnd={() => handleDragEnd(prospect.id)}
+        onDragOver={(e) => handleCardDragOver(e, prospect.id)}
+        onDrop={(e) => handleDrop(e, prospect.status)}
+        className={cn(
+          "relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border cursor-grab active:cursor-grabbing group active:scale-[0.99]",
+          isDropTarget && dropPosition === 'before'
+            ? "border-blue-400 border-t-[3px]"
+            : isDropTarget && dropPosition === 'after'
+            ? "border-blue-400 border-b-[3px]"
+            : "border-gray-100"
+        )}
         onClick={() => setEditingProspect(prospect)}
       >
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="min-w-0">
-            <h3 className="font-bold text-gray-900 leading-snug line-clamp-2">{prospect.title}</h3>
-            {prospect.phone && <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><Phone className="w-3 h-3" />{prospect.phone}</p>}
+        <div className="flex items-start gap-3 mb-3">
+          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5", cfg.bg, cfg.text)}>
+            <StatusIcon className="w-4 h-4" />
           </div>
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold whitespace-nowrap ${cfg.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-            {cfg.label}
-          </div>
+          <h3 className="text-sm font-bold leading-snug text-gray-900 flex-1 min-w-0">
+            {prospect.title || "Sans titre"}
+          </h3>
         </div>
 
-        <div className="bg-gray-50/50 rounded-2xl p-4 mb-4">
-          <p className="text-sm text-gray-600 line-clamp-3 min-h-[60px]">{prospect.notes || 'Aucune note particulière...'}</p>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {prixFormate ? (
+            <span className="flex items-center gap-1 bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1 text-[10px] font-bold">
+              <Euro className="w-3 h-3" />{prixFormate}
+            </span>
+          ) : null}
+          {prospect.ville ? (
+            <span className="flex items-center gap-1 bg-blue-50 text-blue-600 rounded-lg px-2 py-1 text-[10px] font-bold truncate max-w-[120px]">
+              <MapPin className="w-3 h-3 flex-shrink-0" />{prospect.ville}
+            </span>
+          ) : null}
         </div>
+
+        {prospect.notes ? (
+          <p className="text-[11px] text-gray-400 line-clamp-2 mb-3 leading-relaxed">
+            {prospect.notes}
+          </p>
+        ) : null}
 
         {checklistTotal > 0 && (
-          <div className="mb-4 px-1">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider flex items-center gap-1"><ListChecks className="w-3 h-3" />Checklist</span>
-              <span className="text-[10px] font-bold text-gray-400">{checklistAnswered}/{checklistTotal}</span>
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-bold uppercase text-gray-300 tracking-wider">Checklist</span>
+              <span className="text-[9px] font-bold text-gray-300">{checklistDone}/{checklistTotal}</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${Math.round((checklistAnswered / checklistTotal) * 100)}%` }} />
+            <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all"
+                style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
+              />
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-50 gap-3">
-          {prospect.link ? (
-            <a
-              href={prospect.link.startsWith('http') ? prospect.link : `https://${prospect.link}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={event => event.stopPropagation()}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />Annonce
-            </a>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+          {prospect.phone ? (
+            <span className="text-[10px] text-gray-400 font-medium">{prospect.phone}</span>
           ) : <span />}
           <button
-            type="button"
-            onClick={event => {
-              event.stopPropagation();
-              setEditingProspect(prospect);
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-black transition-colors"
+            onClick={(e) => convertToProject(prospect, e)}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-black text-white rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all active:scale-95 opacity-0 group-hover:opacity-100"
           >
-            <Edit className="w-3.5 h-3.5" />Modifier
+            <Briefcase className="w-2.5 h-2.5" />
+            Projet
           </button>
         </div>
       </div>
     );
   };
 
+  // ——— KANBAN VIEW ———
+  const KanbanView = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 items-start">
+      {KANBAN_COLUMNS.map((colStatus) => {
+        const cfg = statusConfig[colStatus];
+        const StatusIcon = cfg.icon;
+        const colProspects = filteredProspects.filter(p => p.status === colStatus);
+        const isOver = dragOverColumn === colStatus;
+
+        return (
+          <div
+            key={colStatus}
+            className="flex flex-col"
+            onDragOver={(e) => handleColumnDragOver(e, colStatus)}
+            onDragLeave={(e) => handleColumnDragLeave(e, colStatus)}
+            onDrop={(e) => handleDrop(e, colStatus)}
+          >
+            <div className={cn(
+              "flex items-center justify-between px-4 py-3 rounded-2xl border mb-3",
+              cfg.header
+            )}>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-7 h-7 rounded-xl flex items-center justify-center", cfg.bg, cfg.text)}>
+                  <StatusIcon className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-sm font-bold text-gray-800">{colStatus}</span>
+              </div>
+              <span className={cn(
+                "text-xs font-black px-2 py-0.5 rounded-full",
+                cfg.bg, cfg.text
+              )}>
+                {colProspects.length}
+              </span>
+            </div>
+
+            <div
+              className={cn(
+                "flex flex-col gap-3 min-h-[80px] rounded-2xl transition-all duration-150 p-1",
+                isOver && colProspects.length === 0
+                  ? "bg-blue-50/60 ring-2 ring-blue-200 ring-dashed"
+                  : ""
+              )}
+            >
+              {colProspects.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <p className={cn(
+                    "text-xs font-medium text-center transition-all",
+                    isOver ? "text-blue-400" : "text-gray-300"
+                  )}>
+                    {isOver ? "Déposer ici" : "Aucun prospect"}
+                  </p>
+                </div>
+              ) : (
+                colProspects.map(prospect => (
+                  <KanbanCard key={prospect.id} prospect={prospect} />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#fafafa] flex">
-      <Sidebar />
+    <div className="flex min-h-screen bg-[#F4F5F7] text-gray-900 font-sans">
+      <Sidebar className="hidden lg:flex border-r border-gray-100" />
       <main className="flex-1 min-w-0">
-        <TopBar title="Prospection" />
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <TopBar />
+        <div className="px-4 md:px-10 py-6 md:py-0 pb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 md:mb-10 md:mt-8">
             <div>
-              <p className="text-sm text-gray-400">Pilotez vos opportunités d'acquisition et centralisez vos analyses.</p>
+              <h1 className="text-4xl font-black tracking-tight mb-2">Prospection</h1>
+              <p className="text-gray-500">Gérez vos opportunités avant d'en faire des projets</p>
             </div>
-            <Button onClick={() => setIsAddOpen(true)} className="rounded-xl bg-black hover:bg-gray-800 text-white gap-2">
-              <Plus className="w-4 h-4" />Ajouter un prospect
-            </Button>
+            <button 
+              onClick={() => setIsAddOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/10 hover:bg-gray-800 transition-all active:scale-[0.98]"
+            >
+              <Plus className="w-5 h-5" />
+              Nouveau Prospect
+            </button>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-3 mb-6">
+          {/* Search + View Switcher */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Rechercher un prospect..." className="pl-9 rounded-xl" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Rechercher par titre, ville, téléphone ou notes..."
+                className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-black transition-all"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
             </div>
-            <div className="flex bg-white border border-gray-100 rounded-xl p-1">
-              <button type="button" onClick={() => setViewMode('grid')} className={cn('px-3 py-2 rounded-lg text-xs font-bold transition-colors', viewMode === 'grid' ? 'bg-black text-white' : 'text-gray-400 hover:text-gray-700')}><LayoutGrid className="w-4 h-4" /></button>
-              <button type="button" onClick={() => setViewMode('kanban')} className={cn('px-3 py-2 rounded-lg text-xs font-bold transition-colors', viewMode === 'kanban' ? 'bg-black text-white' : 'text-gray-400 hover:text-gray-700')}><List className="w-4 h-4" /></button>
+
+            <div className="flex items-center gap-1 bg-white rounded-2xl p-1.5 shadow-sm flex-shrink-0">
+              <button
+                onClick={() => setViewMode('gallery')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all",
+                  viewMode === 'gallery'
+                    ? "bg-black text-white shadow-md"
+                    : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Galerie</span>
+              </button>
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all",
+                  viewMode === 'kanban'
+                    ? "bg-black text-white shadow-md"
+                    : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                )}
+              >
+                <Columns3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
             </div>
           </div>
 
-          {viewMode === 'grid' ? (
-            filteredProspects.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">{filteredProspects.map(renderProspectCard)}</div>
-            ) : (
-              <div className="bg-white border border-dashed border-gray-200 rounded-3xl py-20 text-center"><Building2 className="w-10 h-10 text-gray-200 mx-auto mb-3" /><p className="font-bold text-gray-600">Aucun prospect trouvé</p><p className="text-sm text-gray-400 mt-1">Ajoutez une première opportunité pour démarrer.</p></div>
-            )
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
-              {statusOrder.map(status => {
-                const cfg = statusConfig[status];
-                const statusProspects = filteredProspects.filter(prospect => prospect.status === status);
+          {/* Views */}
+          {viewMode === 'gallery' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProspects.map((prospect) => {
+                const cfg = statusConfig[prospect.status] ?? statusConfig["En attente"];
+                const StatusIcon = cfg.icon;
+                const checklistTotal = prospect.checklist?.length ?? 0;
+                const checklistDone = prospect.checklist?.filter(i => i.checked).length ?? 0;
+                const prixFormate = formatPrix(prospect.prix);
                 return (
-                  <section
-                    key={status}
-                    onDragOver={event => event.preventDefault()}
-                    onDrop={() => {
-                      if (draggedProspectId) updateProspectStatus(draggedProspectId, status);
-                    }}
-                    className="bg-gray-100/60 rounded-3xl p-3 min-h-[260px]"
+                  <div 
+                    key={prospect.id}
+                    onClick={() => setEditingProspect(prospect)}
+                    className="group bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-100 relative cursor-pointer"
                   >
-                    <div className="flex items-center justify-between px-2 py-2 mb-2"><div className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${cfg.dot}`} /><span className="text-xs font-black text-gray-600">{cfg.label}</span></div><span className="text-xs font-bold text-gray-400">{statusProspects.length}</span></div>
-                    <div className="space-y-3">{statusProspects.map(renderProspectCard)}</div>
-                  </section>
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors flex-shrink-0",
+                        cfg.bg,
+                        cfg.text
+                      )}>
+                        <StatusIcon className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl font-bold leading-tight truncate">{prospect.title || "Sans titre"}</h3>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-5 flex-wrap">
+                      {prixFormate ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 rounded-xl px-3 py-1.5">
+                          <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="text-xs font-bold">{prixFormate}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 bg-gray-50 text-gray-400 rounded-xl px-3 py-1.5">
+                          <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="text-xs font-medium">Prix non renseigné</span>
+                        </div>
+                      )}
+                      {prospect.ville ? (
+                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-600 rounded-xl px-3 py-1.5 min-w-0">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="text-xs font-bold truncate">{prospect.ville}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 bg-gray-50 text-gray-400 rounded-xl px-3 py-1.5">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="text-xs font-medium">Ville non renseignée</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-gray-50/50 rounded-2xl p-4 mb-4">
+                      <p className="text-sm text-gray-600 line-clamp-3 min-h-[60px]">
+                        {prospect.notes || "Aucune note particulière..."}
+                      </p>
+                    </div>
+
+                    {checklistTotal > 0 && (
+                      <div className="mb-4 px-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Checklist</span>
+                          <span className="text-[10px] font-bold text-gray-400">{checklistDone}/{checklistTotal}</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full transition-all"
+                            style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 gap-3">
+                      {prospect.link && (
+                        <a 
+                          href={prospect.link.startsWith('http') ? prospect.link : `https://${prospect.link}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors flex-shrink-0"
+                        >
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      )}
+                      <Select 
+                        value={prospect.status} 
+                        onValueChange={(val: Prospect['status']) => handleStatusChange(prospect.id, val)}
+                      >
+                        <SelectTrigger 
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 h-9 text-[10px] font-bold uppercase rounded-xl border-none bg-gray-50"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="À étudier">À étudier</SelectItem>
+                          <SelectItem value="À appeler">À appeler</SelectItem>
+                          <SelectItem value="À visiter">À visiter</SelectItem>
+                          <SelectItem value="À négocier">À négocier</SelectItem>
+                          <SelectItem value="En attente">En attente</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <button 
+                        onClick={(e) => convertToProject(prospect, e)}
+                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all shadow-md active:scale-95 flex-shrink-0"
+                      >
+                        <Briefcase className="w-3 h-3" />
+                        Créer projet
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
+          ) : (
+            <KanbanView />
           )}
         </div>
       </main>
 
+      {/* ============================================================ */}
+      {/* Dialog Ajout                                                  */}
+      {/* ============================================================ */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Ajouter un prospect</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><label className="text-sm font-medium">Titre</label><Input value={formData.title} onChange={event => setFormData({ ...formData, title: event.target.value })} placeholder="Ex. Immeuble centre-ville" className="mt-1" /></div>
-            <div><label className="text-sm font-medium">Téléphone</label><Input value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} placeholder="06…" className="mt-1" /></div>
-            <div><label className="text-sm font-medium">Lien de l'annonce</label><Input value={formData.link} onChange={event => setFormData({ ...formData, link: event.target.value })} placeholder="https://…" className="mt-1" /></div>
-            <div><label className="text-sm font-medium">Statut</label><select value={formData.status} onChange={event => setFormData({ ...formData, status: event.target.value as Prospect['status'] })} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"><option>À appeler</option><option>À visiter</option><option>À étudier</option><option>En attente</option></select></div>
-            <div><label className="text-sm font-medium">Notes</label><Textarea value={formData.notes} onChange={event => setFormData({ ...formData, notes: event.target.value })} placeholder="Informations utiles, points à vérifier…" className="mt-1 min-h-[120px]" /></div>
+        <DialogContent className="w-[calc(100vw-2rem)] mx-auto overflow-x-hidden rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
+          {/* Header */}
+          <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 min-w-0 overflow-hidden">
+            <DialogTitle className="text-2xl font-black truncate min-w-0">Nouveau Prospect</DialogTitle>
+          </DialogHeader>
+
+          {/* Body */}
+          <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0 overflow-hidden">
+            {/* Titre */}
+            <div className="space-y-2 min-w-0">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
+              <Input 
+                placeholder="ex: Immeuble de rapport Lyon 3"
+                value={formData.title} 
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                className="w-full rounded-xl"
+              />
+            </div>
+
+            {/* Prix / Ville */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+              <div className="space-y-2 min-w-0">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
+                <div className="relative min-w-0">
+                  <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="ex: 180000"
+                    value={formData.prix} 
+                    onChange={e => setFormData({...formData, prix: e.target.value})}
+                    className="w-full rounded-xl pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 min-w-0">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
+                <div className="relative min-w-0">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="ex: Dijon"
+                    value={formData.ville} 
+                    onChange={e => setFormData({...formData, ville: e.target.value})}
+                    className="w-full rounded-xl pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Téléphone / Statut */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+              <div className="space-y-2 min-w-0">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
+                <Input 
+                  placeholder="06 00 00 00 00"
+                  value={formData.phone} 
+                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  className="w-full rounded-xl"
+                />
+              </div>
+              <div className="space-y-2 min-w-0">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(val: Prospect['status']) => setFormData({...formData, status: val})}
+                >
+                  <SelectTrigger className="w-full rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="À étudier">À étudier</SelectItem>
+                    <SelectItem value="À appeler">À appeler</SelectItem>
+                    <SelectItem value="À visiter">À visiter</SelectItem>
+                    <SelectItem value="À négocier">À négocier</SelectItem>
+                    <SelectItem value="En attente">En attente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Lien annonce */}
+            <div className="space-y-2 min-w-0">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
+              <div className="relative min-w-0">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input 
+                  placeholder="LBC, SeLoger..."
+                  value={formData.link} 
+                  onChange={e => setFormData({...formData, link: e.target.value})}
+                  className="w-full rounded-xl pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2 min-w-0">
+              <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
+              <Textarea 
+                placeholder="Détails du bien, contact agence..."
+                value={formData.notes} 
+                onChange={e => setFormData({...formData, notes: e.target.value})}
+                className="w-full rounded-xl min-h-[100px]"
+              />
+            </div>
+
+            <DialogFooter className="pt-4">
+              <button 
+                onClick={handleAdd}
+                className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+              >
+                Ajouter à ma prospection
+              </button>
+            </DialogFooter>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setIsAddOpen(false)}>Annuler</Button><Button onClick={handleAddProspect}>Ajouter</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(editingProspect)} onOpenChange={open => !open && setEditingProspect(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Modifier le prospect</DialogTitle></DialogHeader>
-          {editingProspect && (
-            <div className="space-y-5 py-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="text-sm font-medium">Titre</label><Input value={editingProspect.title} onChange={event => setEditingProspect({ ...editingProspect, title: event.target.value })} className="mt-1" /></div>
-                <div><label className="text-sm font-medium">Téléphone</label><Input value={editingProspect.phone} onChange={event => setEditingProspect({ ...editingProspect, phone: event.target.value })} className="mt-1" /></div>
-              </div>
-              <div><label className="text-sm font-medium">Lien de l'annonce</label><Input value={editingProspect.link} onChange={event => setEditingProspect({ ...editingProspect, link: event.target.value })} className="mt-1" /></div>
-              <div><label className="text-sm font-medium">Statut</label><select value={editingProspect.status} onChange={event => setEditingProspect({ ...editingProspect, status: event.target.value as Prospect['status'] })} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"><option>À appeler</option><option>À visiter</option><option>À étudier</option><option>En attente</option></select></div>
-              <div><label className="text-sm font-medium">Notes</label><Textarea value={editingProspect.notes} onChange={event => setEditingProspect({ ...editingProspect, notes: event.target.value })} className="mt-1 min-h-[120px]" /></div>
-              <div className="bg-gray-50/60 rounded-2xl p-5"><ProspectChecklist items={editingProspect.checklist ?? []} onChange={items => setEditingProspect({ ...editingProspect, checklist: items })} /></div>
-            </div>
-          )}
-          <DialogFooter className="gap-2 sm:gap-3"><Button variant="outline" onClick={() => editingProspect && handleDeleteProspect(editingProspect)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4 mr-2" />Supprimer</Button><div className="flex-1" /><Button variant="outline" onClick={() => setEditingProspect(null)}>Annuler</Button><Button onClick={handleSaveProspect}><Save className="w-4 h-4 mr-2" />Enregistrer</Button></DialogFooter>
+      {/* ============================================================ */}
+      {/* Dialog Édition / Détails                                     */}
+      {/* ============================================================ */}
+      <Dialog open={!!editingProspect} onOpenChange={(open) => !open && setEditingProspect(null)}>
+        <DialogContent className="w-[calc(100vw-2rem)] mx-auto overflow-x-hidden rounded-2xl p-0 border-none shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-[850px] sm:w-[850px] sm:rounded-[2.5rem] sm:max-h-[90vh]">
+          {editingProspect && (() => {
+            const cfg = statusConfig[editingProspect.status] ?? statusConfig["En attente"];
+            const StatusIcon = cfg.icon;
+            return (
+              <>
+                {/* Header avec icône statut + titre + bouton supprimer */}
+                <DialogHeader className="px-4 py-4 sm:p-8 sm:pb-4 bg-gray-50/50 flex flex-row items-center justify-between min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", cfg.bg, cfg.text)}>
+                      <StatusIcon className="w-5 h-5" />
+                    </div>
+                    <DialogTitle className="text-2xl font-black min-w-0 truncate">Détails du Prospect</DialogTitle>
+                  </div>
+                  <button 
+                    onClick={() => handleDelete(editingProspect.id)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0 ml-2"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </DialogHeader>
+
+                {/* Body */}
+                <div className="px-4 py-4 sm:p-8 space-y-5 min-w-0 overflow-hidden">
+                  {/* Titre */}
+                  <div className="space-y-2 min-w-0">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Titre du bien</Label>
+                    <Input 
+                      value={editingProspect.title} 
+                      onChange={e => setEditingProspect({...editingProspect, title: e.target.value})}
+                      className="w-full rounded-xl"
+                    />
+                  </div>
+
+                  {/* Prix / Ville */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Prix affiché</Label>
+                      <div className="relative min-w-0">
+                        <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input 
+                          placeholder="ex: 180000"
+                          value={editingProspect.prix ?? ''} 
+                          onChange={e => setEditingProspect({...editingProspect, prix: e.target.value})}
+                          className="w-full rounded-xl pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Ville</Label>
+                      <div className="relative min-w-0">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input 
+                          placeholder="ex: Dijon"
+                          value={editingProspect.ville ?? ''} 
+                          onChange={e => setEditingProspect({...editingProspect, ville: e.target.value})}
+                          className="w-full rounded-xl pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Téléphone / Statut */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Téléphone</Label>
+                      <Input 
+                        value={editingProspect.phone} 
+                        onChange={e => setEditingProspect({...editingProspect, phone: e.target.value})}
+                        className="w-full rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-[10px] font-bold uppercase text-gray-400">Statut</Label>
+                      <Select 
+                        value={editingProspect.status} 
+                        onValueChange={(val: Prospect['status']) => setEditingProspect({...editingProspect, status: val})}
+                      >
+                        <SelectTrigger className="w-full rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="À étudier">À étudier</SelectItem>
+                          <SelectItem value="À appeler">À appeler</SelectItem>
+                          <SelectItem value="À visiter">À visiter</SelectItem>
+                          <SelectItem value="À négocier">À négocier</SelectItem>
+                          <SelectItem value="En attente">En attente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Lien annonce — flex avec input qui se rétrécit + bouton lien fixe */}
+                  <div className="space-y-2 min-w-0">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Lien de l'annonce</Label>
+                    <div className="flex gap-2 min-w-0 overflow-hidden">
+                      <Input 
+                        value={editingProspect.link} 
+                        onChange={e => setEditingProspect({...editingProspect, link: e.target.value})}
+                        className="w-full min-w-0 flex-1 rounded-xl"
+                      />
+                      {editingProspect.link && (
+                        <a 
+                          href={editingProspect.link.startsWith('http') ? editingProspect.link : `https://${editingProspect.link}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors flex-shrink-0"
+                        >
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2 min-w-0">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400">Notes & Commentaires</Label>
+                    <Textarea 
+                      value={editingProspect.notes} 
+                      onChange={e => setEditingProspect({...editingProspect, notes: e.target.value})}
+                      className="w-full rounded-xl min-h-[120px]"
+                    />
+                  </div>
+
+                  {/* ——— CHECKLIST ——— */}
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0 overflow-hidden">
+                    <ProspectChecklist
+                      items={editingProspect.checklist ?? []}
+                      onChange={(items) => setEditingProspect({ ...editingProspect, checklist: items })}
+                    />
+                  </div>
+
+                  {/* ——— CHIFFRAGE ——— */}
+                  <div className="bg-gray-50/60 rounded-2xl p-4 sm:p-5 min-w-0 overflow-hidden">
+                    <ProspectChiffrage
+                      data={editingProspect.chiffrage ?? defaultChiffrage()}
+                      onChange={(chiffrage) => setEditingProspect({ ...editingProspect, chiffrage })}
+                    />
+                  </div>
+
+                  <DialogFooter className="pt-4 flex flex-col sm:flex-row gap-3">
+                    <button 
+                      onClick={() => setEditingProspect(null)}
+                      className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+                    >
+                      Annuler
+                    </button>
+                    <button 
+                      onClick={handleUpdate}
+                      className="flex-1 sm:flex-[2] px-6 py-4 bg-black text-white rounded-2xl font-bold shadow-xl shadow-black/20 hover:bg-gray-800 transition-all active:scale-[0.98]"
+                    >
+                      Enregistrer les modifications
+                    </button>
+                  </DialogFooter>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
