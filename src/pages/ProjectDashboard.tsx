@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { safeStorage } from '@/lib/storage';
 
 const ProjectDashboard = () => {
   const { projectId } = useParams();
@@ -49,7 +50,7 @@ const ProjectDashboard = () => {
 
   const fetchProject = async () => {
     if (!isSupabaseConfigured()) {
-      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const savedProjects = safeStorage.getItem<any[]>('immo_projects_v9', true) || [];
       const found = savedProjects.find((p: any) => p.id === projectId);
       if (found) {
         setProject(found);
@@ -73,7 +74,7 @@ const ProjectDashboard = () => {
       setEditProjectForm({ ...data.metadata });
     } catch (error) {
       console.error('Error fetching project:', error);
-      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const savedProjects = safeStorage.getItem<any[]>('immo_projects_v9', true) || [];
       const found = savedProjects.find((p: any) => p.id === projectId);
       if (found) {
         setProject(found);
@@ -88,9 +89,9 @@ const ProjectDashboard = () => {
 
   const saveProject = async (updatedProject: any) => {
     if (!isSupabaseConfigured()) {
-      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const savedProjects = safeStorage.getItem<any[]>('immo_projects_v9', true) || [];
       const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
-      localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
+      safeStorage.setItem('immo_projects_v9', newProjects);
       setProject(updatedProject);
       return;
     }
@@ -117,9 +118,9 @@ const ProjectDashboard = () => {
   // Persistance en arrière-plan sans bloquer l'UI
   const persistProjectBackground = async (updatedProject: any) => {
     if (!isSupabaseConfigured()) {
-      const savedProjects = JSON.parse(localStorage.getItem('immo_projects_v9') || '[]');
+      const savedProjects = safeStorage.getItem<any[]>('immo_projects_v9', true) || [];
       const newProjects = savedProjects.map((p: any) => p.id === updatedProject.id ? updatedProject : p);
-      localStorage.setItem('immo_projects_v9', JSON.stringify(newProjects));
+      safeStorage.setItem('immo_projects_v9', newProjects);
       return;
     }
 

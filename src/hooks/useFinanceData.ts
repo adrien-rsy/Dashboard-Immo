@@ -2,20 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Releve, LigneCompte, ObjectifPatrimoine } from '@/types/finance';
 
+import { safeStorage } from '@/lib/storage';
+
 const LOCAL_KEY = 'immo_finance_v1';
 const LOCAL_OBJ = 'immo_finance_objectif_v1';
 
 function localLoadReleves(): Releve[] {
-  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? '[]'); } catch { return []; }
+  return safeStorage.getItem<Releve[]>(LOCAL_KEY, true) ?? [];
 }
 function localSaveReleves(r: Releve[]) {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(r));
+  safeStorage.setItem(LOCAL_KEY, r);
 }
 function localLoadObjectif(): ObjectifPatrimoine | null {
-  try { return JSON.parse(localStorage.getItem(LOCAL_OBJ) ?? 'null'); } catch { return null; }
+  return safeStorage.getItem<ObjectifPatrimoine>(LOCAL_OBJ, true);
 }
 function localSaveObjectif(o: ObjectifPatrimoine) {
-  localStorage.setItem(LOCAL_OBJ, JSON.stringify(o));
+  safeStorage.setItem(LOCAL_OBJ, o);
 }
 
 // Mappe les lignes DB vers le type Releve — inclut le champ previsionnel

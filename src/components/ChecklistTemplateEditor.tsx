@@ -3,19 +3,16 @@ import { Plus, Trash2, X, Pencil, Check, GripVertical, ChevronDown, ChevronRight
 import { ChecklistTemplate, DEFAULT_TEMPLATES } from '@/types/checklist';
 import { cn } from '@/lib/utils';
 
+import { safeStorage } from '@/lib/storage';
+
 const STORAGE_KEY = 'immo_checklist_templates';
 
 function loadTemplates(): ChecklistTemplate[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
-  } catch {
-    return DEFAULT_TEMPLATES;
-  }
+  return safeStorage.getItem<ChecklistTemplate[]>(STORAGE_KEY, true) || DEFAULT_TEMPLATES;
 }
 
 function saveTemplates(tpls: ChecklistTemplate[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tpls));
+  safeStorage.setItem(STORAGE_KEY, tpls);
 }
 
 interface Props {

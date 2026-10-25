@@ -45,6 +45,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { safeStorage } from '@/lib/storage';
 
 interface Prospect {
   id: string;
@@ -166,9 +167,9 @@ const Prospection = () => {
 
   const fetchProspects = async () => {
     if (!isSupabaseConfigured()) {
-      const saved = localStorage.getItem('immo_prospects_v2');
+      const saved = safeStorage.getItem<any[]>('immo_prospects_v2', true);
       if (saved) {
-        const migrated = migrateOldStatuses(JSON.parse(saved));
+        const migrated = migrateOldStatuses(saved);
         setProspects(migrated);
       }
       setLoading(false);
@@ -186,9 +187,9 @@ const Prospection = () => {
       setProspects(migrated);
     } catch (error) {
       console.error('Error fetching prospects:', error);
-      const saved = localStorage.getItem('immo_prospects_v2');
+      const saved = safeStorage.getItem<any[]>('immo_prospects_v2', true);
       if (saved) {
-        const migrated = migrateOldStatuses(JSON.parse(saved));
+        const migrated = migrateOldStatuses(saved);
         setProspects(migrated);
       }
     } finally {
@@ -198,7 +199,7 @@ const Prospection = () => {
 
   const saveToLocal = (data: Prospect[]) => {
     setProspects(data);
-    localStorage.setItem('immo_prospects_v2', JSON.stringify(data));
+    safeStorage.setItem('immo_prospects_v2', data);
   };
 
   const handleAdd = async () => {
@@ -323,14 +324,14 @@ const Prospection = () => {
 
   const convertToProject = (prospect: Prospect, e: React.MouseEvent) => {
     e.stopPropagation();
-    localStorage.setItem('prospection_conversion', JSON.stringify({
+    safeStorage.setItem('prospection_conversion', {
       title: prospect.title || `Projet - ${prospect.phone}`,
       address: prospect.ville || '',
       lotCount: '1',
       acqPrice: prospect.prix || '',
       travauxPrice: '',
       notes: prospect.notes
-    }));
+    });
     navigate('/projects');
   };
 

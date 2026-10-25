@@ -176,13 +176,39 @@ const LotsTable = ({ lots = [], scenarios = [], activeScenarioId, onAdd, onUpdat
                   const isGrouped = groupIndex !== -1;
                   const group = isGrouped ? groupedSales[groupIndex] : null;
                   const groupColor = isGrouped ? (GROUP_COLORS[groupIndex] || GROUP_COLORS[0]) : null;
+
+                  const lotSurface = parseFloat(lot.surface) || 0;
+                  let pricePerM2: number | null = null;
+
+                  if (isGrouped && group) {
+                    const groupedLots = lots.filter((l: any) => group.lotIds && Array.isArray(group.lotIds) && group.lotIds.includes(l.id));
+                    const totalGroupSurface = groupedLots.reduce((sum: number, l: any) => sum + (parseFloat(l.surface) || 0), 0);
+                    if (totalGroupSurface > 0 && (group.price || 0) > 0) {
+                      pricePerM2 = Math.round(group.price / totalGroupSurface);
+                    }
+                  } else {
+                    const price = Number(lot.prices?.[s.id]) || 0;
+                    if (lotSurface > 0 && price > 0) {
+                      pricePerM2 = Math.round(price / lotSurface);
+                    }
+                  }
+
+                  const pricePerM2Formatted = pricePerM2
+                    ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(pricePerM2)} €/m²`
+                    : null;
+
                   return (
                     <td key={s.id} className="px-8 py-5 text-center">
-                      <div className="flex flex-col items-center gap-1">
+                      <div className="flex flex-col items-center gap-0.5">
                         <span className={cn("text-sm font-bold", s.id === activeScenarioId ? "text-black" : "text-gray-400")} style={isGrouped ? { color: groupColor } : {}}>
                           {isGrouped ? formatEuro(group?.price || 0) : formatEuro(lot.prices?.[s.id] || 0)}
                         </span>
-                        {isGrouped && <span className="px-1.5 py-0.5 text-white text-[8px] font-black uppercase rounded shadow-sm" style={{ backgroundColor: groupColor || '#000' }}>Groupé</span>}
+                        {pricePerM2Formatted && (
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {pricePerM2Formatted}
+                          </span>
+                        )}
+                        {isGrouped && <span className="px-1.5 py-0.5 text-white text-[8px] font-black uppercase rounded shadow-sm mt-0.5" style={{ backgroundColor: groupColor || '#000' }}>Groupé</span>}
                       </div>
                     </td>
                   );

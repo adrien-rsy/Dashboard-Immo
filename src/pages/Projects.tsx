@@ -24,6 +24,7 @@ import {
 import { showSuccess, showError } from '@/utils/toast';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { safeStorage } from '@/lib/storage';
 
 const CACHE_KEY = 'immo_projects_v9';
 
@@ -66,17 +67,12 @@ const Projects = () => {
 
   // Initialisation directe depuis le cache — pas d'écran vide
   const [projects, setProjects] = useState<any[]>(() => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
+    return safeStorage.getItem<any[]>(CACHE_KEY, true) || [];
   });
 
   // true uniquement si le cache était vide (première visite)
   const [isFirstLoad, setIsFirstLoad] = useState(() => {
-    return !localStorage.getItem(CACHE_KEY);
+    return !safeStorage.getItem(CACHE_KEY);
   });
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -96,18 +92,16 @@ const Projects = () => {
   useEffect(() => {
     fetchProjects();
 
-    const conversion = localStorage.getItem('prospection_conversion');
+    const conversion = safeStorage.getItem<any>('prospection_conversion', true);
     if (conversion) {
-      const data = JSON.parse(conversion);
-      setNewProject(prev => ({ ...prev, title: data.title, lotCount: data.lotCount }));
+      setNewProject(prev => ({ ...prev, title: conversion.title, lotCount: conversion.lotCount }));
       setIsCreateOpen(true);
-      localStorage.removeItem('prospection_conversion');
+      safeStorage.removeItem('prospection_conversion');
     }
   }, []);
 
   const fetchProjects = async () => {
     if (!isSupabaseConfigured()) {
-      // Déjà chargé depuis le cache dans useState
       setIsFirstLoad(false);
       return;
     }
@@ -123,10 +117,9 @@ const Projects = () => {
       const fresh = data || [];
       setProjects(fresh);
       // Mise à jour silencieuse du cache
-      localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
+      safeStorage.setItem(CACHE_KEY, fresh);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      // En cas d'erreur, le cache affiché reste en place
     } finally {
       setIsFirstLoad(false);
     }
@@ -162,7 +155,7 @@ const Projects = () => {
       const id = `project_${Date.now()}`;
       const updated = [{ id, ...projectData }, ...projects];
       setProjects(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+      safeStorage.setItem(CACHE_KEY, updated);
       setIsCreateOpen(false);
       showSuccess("Projet créé avec succès (Local)");
       navigate(`/project/${id}`);
@@ -179,7 +172,7 @@ const Projects = () => {
 
       const updated = [data[0], ...projects];
       setProjects(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+      safeStorage.setItem(CACHE_KEY, updated);
       setIsCreateOpen(false);
       showSuccess("Projet créé avec succès");
       navigate(`/project/${data[0].id}`);
@@ -196,7 +189,7 @@ const Projects = () => {
     if (!isSupabaseConfigured()) {
       const updated = projects.filter(p => p.id !== id);
       setProjects(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+      safeStorage.setItem(CACHE_KEY, updated);
       showSuccess("Projet supprimé (Local)");
       return;
     }
@@ -211,7 +204,7 @@ const Projects = () => {
 
       const updated = projects.filter(p => p.id !== id);
       setProjects(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+      safeStorage.setItem(CACHE_KEY, updated);
       showSuccess("Projet supprimé");
     } catch (error) {
       console.error('Error deleting project:', error);
